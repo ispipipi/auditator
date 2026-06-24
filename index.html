@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AUDITATOR | Modulo Caja de Compensacion</title>
+  <script>
+    tailwind = {
+      config: {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif']
+            },
+            colors: {
+              auditCyan: '#1BB4D8',
+              auditDark: '#0F172A',
+              auditBg: '#EDF2F7'
+            },
+            boxShadow: {
+              soft: '0 12px 34px rgba(15, 23, 42, 0.08)'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(27, 180, 216, 0.12), transparent 28%),
+        linear-gradient(180deg, #f8fbfd 0%, #edf2f7 42%, #e6edf5 100%);
+    }
+
+    .dropzone-active {
+      border-color: #1BB4D8 !important;
+      background: rgba(27, 180, 216, 0.08) !important;
+    }
+
+    .dropzone-error {
+      border-color: #dc2626 !important;
+      background: rgba(220, 38, 38, 0.06) !important;
+    }
+
+    .table-scroll::-webkit-scrollbar {
+      height: 10px;
+      width: 10px;
+    }
+
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.18);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-900">
+  <div class="min-h-screen">
+    <header class="border-b border-slate-800 bg-auditDark text-white shadow-soft">
+      <div class="mx-auto flex min-h-[88px] w-full max-w-[1440px] items-center justify-between px-6 py-5 lg:px-10">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-lg font-bold text-cyan-300">
+            AU
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-cyan-300">Nominas NPR</p>
+            <h1 class="text-2xl font-semibold tracking-tight">AUDITATOR</h1>
+            <p class="text-sm text-slate-300">Modulo: Caja de Compensacion</p>
+          </div>
+        </div>
+        <div class="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 xl:block">
+          Auditoria local en browser, sin backend
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-[1440px] px-6 py-8 lg:px-10">
+      <section class="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-soft backdrop-blur">
+        <div class="mb-6 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Configuracion</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Cruce de Caja de Compensacion</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Carga los cuatro archivos fuente, filtra por empresa y ejecuta la auditoria para comparar montos
+              de credito y ahorro entre Caja, Rex y Maestro Basico.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-slate-700">
+            Estado actual:
+            <span id="status-pill" class="font-semibold text-slate-900">Esperando archivos</span>
+          </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <label for="empresa-select" class="mb-3 block text-sm font-semibold text-slate-700">Empresa</label>
+            <select
+              id="empresa-select"
+              class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm outline-none transition focus:border-auditCyan focus:ring-4 focus:ring-cyan-100"
+            >
+              <option value="" selected disabled>-- Selecciona empresa --</option>
+              <option value="FBO">FBO (Santiago F.B.O. SPA)</option>
+              <option value="Kaipoki">Kaipoki (Kaipoki SPA)</option>
+              <option value="Progreso">Progreso (Comercial Progreso SPA)</option>
+            </select>
+            <p class="mt-3 text-xs leading-5 text-slate-500">
+              Al cambiar de empresa se limpia la carga actual para evitar cruces inconsistentes.
+            </p>
+          </div>
+
+          <div class="grid gap-5 md:grid-cols-2">
+            <div
+              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
+              data-file-key="credito"
+            >
+              <input id="file-credito" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
+                <p class="mt-5 text-base font-semibold text-slate-900">📄 Retencion Credito (Caja)</p>
+                <p class="mt-2 text-sm text-slate-500">Archivo Retenciones_credito_YYYYMM_EMPRESA.xlsx</p>
+                <div class="mt-5">
+                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
+                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
+                </div>
+              </div>
+              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+            </div>
+
+            <div
+              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
+              data-file-key="ahorro"
+            >
+              <input id="file-ahorro" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
+                <p class="mt-5 text-base font-semibold text-slate-900">📄 Retencion Ahorro (Caja)</p>
+                <p class="mt-2 text-sm text-slate-500">Archivo Retenciones_ahorro_YYYYMM_EMPRESA.xlsx</p>
+                <div class="mt-5">
+                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
+                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
+                </div>
+              </div>
+              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+            </div>
+
+            <div
+              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
+              data-file-key="rex"
+            >
+              <input id="file-rex" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
+                <p class="mt-5 text-base font-semibold text-slate-900">📊 Detalle Rex</p>
+                <p class="mt-2 text-sm text-slate-500">Archivo Detalle_proceso_*.xlsx</p>
+                <div class="mt-5">
+                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
+                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
+                </div>
+              </div>
+              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+            </div>
+
+            <div
+              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
+              data-file-key="maestro"
+            >
+              <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
+                <p class="mt-5 text-base font-semibold text-slate-900">👥 Maestro Basico</p>
+                <p class="mt-2 text-sm text-slate-500">Archivo Maestro_Basico_*.xlsx</p>
+                <div class="mt-5">
+                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
+                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
+                </div>
+              </div>
+              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex flex-col items-center gap-4">
+          <button
+            id="run-audit-btn"
+            class="inline-flex min-w-[240px] items-center justify-center gap-3 rounded-full bg-slate-300 px-8 py-4 text-base font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 enabled:bg-auditCyan enabled:hover:bg-cyan-600"
+            disabled
+          >
+            <span id="run-icon">▶</span>
+            <span id="run-label">Ejecutar Auditoria</span>
+          </button>
+          <p id="run-help" class="text-sm text-slate-500">Debes seleccionar empresa y cargar los 4 archivos requeridos.</p>
+        </div>
+      </section>
+
+      <section id="feedback-banner" class="mt-6 hidden rounded-2xl border px-5 py-4 text-sm font-medium"></section>
+
+      <section id="results-section" class="mt-8 hidden space-y-8">
+        <div class="grid gap-5 xl:grid-cols-4">
+          <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Total</p>
+            <p id="summary-total" class="mt-4 text-4xl font-semibold tracking-tight text-slate-900">0</p>
+            <p class="mt-3 text-sm text-slate-500">Registros considerados en la auditoria</p>
+          </article>
+          <article class="rounded-3xl border border-emerald-200 bg-white p-6 shadow-soft">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">✅ Cuadran</p>
+            <p id="summary-ok" class="mt-4 text-4xl font-semibold tracking-tight text-emerald-600">0</p>
+            <p id="summary-ok-pct" class="mt-3 text-sm text-slate-500">0% del total</p>
+          </article>
+          <article class="rounded-3xl border border-amber-200 bg-white p-6 shadow-soft">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-600">⚠️ Diferencia</p>
+            <p id="summary-diff" class="mt-4 text-4xl font-semibold tracking-tight text-amber-600">0</p>
+            <p id="summary-diff-pct" class="mt-3 text-sm text-slate-500">0% del total</p>
+          </article>
+          <article class="rounded-3xl border border-red-200 bg-white p-6 shadow-soft">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-red-600">❌ Error</p>
+            <p id="summary-error" class="mt-4 text-4xl font-semibold tracking-tight text-red-600">0</p>
+            <p id="summary-error-pct" class="mt-3 text-sm text-slate-500">0% del total</p>
+          </article>
+        </div>
+
+        <div class="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-soft">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Resultados</p>
+              <h3 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Tabla de auditoria</h3>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <div class="flex flex-wrap gap-2">
+                <button class="filter-btn rounded-full border border-slate-200 bg-auditCyan px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600" data-filter="all">Todos</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600" data-filter="✅">✅ OK</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600" data-filter="⚠️">⚠️ Diferencia</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600" data-filter="❌">❌ Error</button>
+              </div>
+              <button
+                id="export-btn"
+                class="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-600"
+                style="background-color:#1BB4D8"
+              >
+                ⬇ Descargar Excel
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-3xl border border-slate-200">
+            <div class="table-scroll overflow-x-auto">
+              <table class="min-w-[1440px] divide-y divide-slate-200">
+                <thead class="text-left text-xs uppercase tracking-[0.22em] text-white" style="background-color:#0F172A">
+                  <tr>
+                    <th class="px-4 py-4 font-semibold">Estado</th>
+                    <th class="px-4 py-4 font-semibold">RUT</th>
+                    <th class="px-4 py-4 font-semibold">Nombre</th>
+                    <th class="px-4 py-4 font-semibold">Empresa</th>
+                    <th class="px-4 py-4 font-semibold">Sede</th>
+                    <th class="px-4 py-4 font-semibold">Estado Empleado</th>
+                    <th class="px-4 py-4 font-semibold">Caja Credito $</th>
+                    <th class="px-4 py-4 font-semibold">Rex Credito $</th>
+                    <th class="px-4 py-4 font-semibold">Caja Ahorro $</th>
+                    <th class="px-4 py-4 font-semibold">Rex Ahorro $</th>
+                    <th class="px-4 py-4 font-semibold">Motivo</th>
+                  </tr>
+                </thead>
+                <tbody id="results-body" class="divide-y divide-slate-200 bg-white"></tbody>
+              </table>
+            </div>
+          </div>
+
+        <p id="results-count" class="mt-4 text-sm text-slate-500"></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const EMPRESA_MAP = {
+      FBO: 'food beverage organization spa',
+      Kaipoki: 'kaipoki spa',
+      Progreso: 'comercial progreso spa'
+    };
+
+    const FILE_KEYS = ['credito', 'ahorro', 'rex', 'maestro'];
+    const FILE_LABELS = {
+      credito: 'Retencion Credito',
+      ahorro: 'Retencion Ahorro',
+      rex: 'Detalle Rex',
+      maestro: 'Maestro Basico'
+    };
+
+    const state = {
+      empresa: '',
+      files: {
+        credito: null,
+        ahorro: null,
+        rex: null,
+        maestro: null
+      },
+      resultados: [],
+      filtroActual: 'all',
+      ejecutando: false
+    };
+
+    const refs = {
+      empresaSelect: document.getElementById('empresa-select'),
+      runButton: document.getElementById('run-audit-btn'),
+      runLabel: document.getElementById('run-label'),
+      runIcon: document.getElementById('run-icon'),
+      runHelp: document.getElementById('run-help'),
+      statusPill: document.getElementById('status-pill'),
+      feedbackBanner: document.getElementById('feedback-banner'),
+      resultsSection: document.getElementById('results-section'),
+      resultsBody: document.getElementById('results-body'),
+      resultsCount: document.getElementById('results-count'),
+      exportBtn: document.getElementById('export-btn'),
+      summaryTotal: document.getElementById('summary-total'),
+      summaryOk: document.getElementById('summary-ok'),
+      summaryOkPct: document.getElementById('summary-ok-pct'),
+      summaryDiff: document.getElementById('summary-diff'),
+      summaryDiffPct: document.getElementById('summary-diff-pct'),
+      summaryError: document.getElementById('summary-error'),
+      summaryErrorPct: document.getElementById('summary-error-pct')
+    };
+
+    function normalizarRut(rut) {
+      if (!rut && rut !== 0) return '';
+      return String(rut)
+        .replace(/\./g, '')
+        .replace(/\s/g, '')
+        .toUpperCase()
+        .trim();
+    }
+
+    function parsearMonto(valor) {
+      if (!valor && valor !== 0) return 0;
+      const str = String(valor).replace(/\./g, '').replace(',', '.');
+      const num = parseFloat(str);
+      return Number.isNaN(num) ? 0 : num;
+    }
+
+    function formatMonto(valor) {
+      if (!valor || valor === 0) return '$0';
+      return '$' + Math.round(valor).toLocaleString('es-CL');
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes && bytes !== 0) return '0 KB';
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    function normalizarTexto(valor) {
+      return String(valor || '').toLowerCase().trim();
+    }
+
+    function mostrarBanner(tipo, mensaje) {
+      refs.feedbackBanner.className = 'mt-6 rounded-2xl border px-5 py-4 text-sm font-medium';
+      if (tipo === 'error') {
+        refs.feedbackBanner.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
+      } else if (tipo === 'success') {
+        refs.feedbackBanner.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+      } else {
+        refs.feedbackBanner.classList.add('border-cyan-200', 'bg-cyan-50', 'text-cyan-700');
+      }
+      refs.feedbackBanner.textContent = mensaje;
+      refs.feedbackBanner.classList.remove('hidden');
+    }
+
+    function ocultarBanner() {
+      refs.feedbackBanner.classList.add('hidden');
+      refs.feedbackBanner.textContent = '';
+    }
+
+    function getDropzoneElements(key) {
+      const zone = document.querySelector(`.dropzone[data-file-key="${key}"]`);
+      return {
+        zone,
+        input: zone.querySelector('input[type="file"]'),
+        meta: zone.querySelector('.file-meta'),
+        error: zone.querySelector('.file-error')
+      };
+    }
+
+    function setDropzoneState(key) {
+      const { zone, meta, error } = getDropzoneElements(key);
+      const file = state.files[key];
+
+      zone.classList.remove('dropzone-error');
+      meta.classList.add('hidden');
+      error.classList.add('hidden');
+      error.textContent = '';
+
+      if (file && file.error) {
+        zone.classList.add('dropzone-error');
+        error.textContent = file.error;
+        error.classList.remove('hidden');
+        return;
+      }
+
+      if (file && file.file) {
+        meta.innerHTML = `
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-semibold text-emerald-700">✅ ${FILE_LABELS[key]} cargado</p>
+              <p class="mt-1 break-all text-sm text-slate-700">${file.file.name}</p>
+            </div>
+            <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+              ${formatBytes(file.file.size)}
+            </div>
+          </div>
+        `;
+        meta.classList.remove('hidden');
+      }
+    }
+
+    function resetFilesAndResults() {
+      FILE_KEYS.forEach((key) => {
+        state.files[key] = null;
+        const { input } = getDropzoneElements(key);
+        input.value = '';
+        setDropzoneState(key);
+      });
+      state.resultados = [];
+      state.filtroActual = 'all';
+      refs.resultsSection.classList.add('hidden');
+      refs.resultsBody.innerHTML = '';
+      refs.resultsCount.textContent = '';
+      refs.summaryTotal.textContent = '0';
+      refs.summaryOk.textContent = '0';
+      refs.summaryDiff.textContent = '0';
+      refs.summaryError.textContent = '0';
+      refs.summaryOkPct.textContent = '0% del total';
+      refs.summaryDiffPct.textContent = '0% del total';
+      refs.summaryErrorPct.textContent = '0% del total';
+      setFilterButtonState();
+      ocultarBanner();
+      updateRunState();
+    }
+
+    function updateRunState() {
+      const filesReady = FILE_KEYS.every((key) => state.files[key] && state.files[key].file);
+      const hasErrors = FILE_KEYS.some((key) => state.files[key] && state.files[key].error);
+      const ready = Boolean(state.empresa) && filesReady && !hasErrors && !state.ejecutando;
+
+      refs.runButton.disabled = !ready;
+      refs.statusPill.textContent = state.ejecutando
+        ? 'Procesando archivos'
+        : ready
+          ? 'Listo para ejecutar'
+          : hasErrors
+            ? 'Hay errores de carga'
+            : state.empresa
+              ? 'Faltan archivos'
+              : 'Esperando empresa y archivos';
+
+      refs.runHelp.textContent = state.ejecutando
+        ? 'Procesando archivos...'
+        : ready
+          ? 'Todo listo. Ejecuta la auditoria cuando quieras.'
+          : 'Debes seleccionar empresa y cargar los 4 archivos requeridos.';
+    }
+
+    function setExecuting(isExecuting) {
+      state.ejecutando = isExecuting;
+      refs.runIcon.textContent = isExecuting ? '⏳' : '▶';
+      refs.runLabel.textContent = isExecuting ? 'Procesando archivos...' : 'Ejecutar Auditoria';
+      updateRunState();
+    }
+
+    function setFilterButtonState() {
+      document.querySelectorAll('.filter-btn').forEach((button) => {
+        const active = button.dataset.filter === state.filtroActual;
+        button.className = active
+          ? 'filter-btn rounded-full border border-slate-200 bg-auditCyan px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600'
+          : 'filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600';
+      });
+    }
+
+    async function readWorkbook(file) {
+      const buffer = await file.arrayBuffer();
+      return XLSX.read(buffer, {
+        type: 'array',
+        cellFormula: false,
+        raw: false
+      });
+    }
+
+    function sheetToRows(workbook) {
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      return XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: false,
+        defval: ''
+      });
+    }
+
+    function parseCredito(rows) {
+      const mapaCredito = new Map();
+
+      for (let index = 19; index < rows.length; index += 1) {
+        const fila = rows[index] || [];
+        const rutRaw = fila[1];
+        const montoRaw = fila[8]; // col I = "Valor a Descontar" (corregido: era [6] = Codigo)
+
+        if (!rutRaw || String(rutRaw).includes('SUBSTITUTE')) continue;
+        if (!rutRaw || !montoRaw) continue;
+
+        const rut = normalizarRut(rutRaw);
+        const monto = parsearMonto(montoRaw);
+
+        if (rut && monto > 0) {
+          mapaCredito.set(rut, (mapaCredito.get(rut) || 0) + monto);
+        }
+      }
+
+      return mapaCredito;
+    }
+
+    function parseAhorro(rows) {
+      const mapaAhorro = new Map();
+
+      for (let index = 16; index < rows.length; index += 1) {
+        const fila = rows[index] || [];
+        const rutRaw = fila[2];
+        const montoRaw = fila[9]; // col J = "Total $" en pesos (corregido: era [7] = Aporte UF)
+
+        if (!rutRaw || String(rutRaw).includes('SUBSTITUTE')) continue;
+        if (!rutRaw || !montoRaw) continue;
+
+        const rut = normalizarRut(rutRaw);
+        const monto = parsearMonto(montoRaw);
+
+        if (rut && monto > 0) {
+          mapaAhorro.set(rut, (mapaAhorro.get(rut) || 0) + monto);
+        }
+      }
+
+      return mapaAhorro;
+    }
+
+    function parseRex(rows) {
+      const mapaRex = new Map();
+      const empresaFiltro = EMPRESA_MAP[state.empresa];
+
+      for (let index = 5; index < rows.length; index += 1) {
+        const fila = rows[index] || [];
+        const nombreEmpresa = normalizarTexto(fila[1]);
+        if (nombreEmpresa !== empresaFiltro) continue;
+
+        const rutRaw = fila[5];
+        if (!rutRaw) continue;
+
+        const rut = normalizarRut(rutRaw);
+        if (!rut) continue;
+
+        const cajaCred = parsearMonto(fila[56]);
+        const cajaVida = parsearMonto(fila[57]);
+        const cajaAhor = parsearMonto(fila[58]);
+
+        const anterior = mapaRex.get(rut) || {
+          nombre: '',
+          montoCredito: 0,
+          montoAhorro: 0
+        };
+
+        mapaRex.set(rut, {
+          nombre: anterior.nombre || String(fila[4] || '').trim(),
+          montoCredito: anterior.montoCredito + cajaCred + cajaVida,
+          montoAhorro: anterior.montoAhorro + cajaAhor
+        });
+      }
+
+      return mapaRex;
+    }
+
+    function parseMaestro(rows) {
+      const mapaMaestro = new Map();
+
+      for (let index = 2; index < rows.length; index += 1) {
+        const fila = rows[index] || [];
+        const rutBase = String(fila[0] || '')
+          .replace(/\./g, '')
+          .replace(/\s/g, '')
+          .trim();
+
+        if (!rutBase) continue;
+
+        mapaMaestro.set(rutBase, {
+          nombre_completo: String(fila[2] || '').trim(),
+          estado: String(fila[21] || '').trim(),
+          nombre_empresa: String(fila[25] || '').trim(),
+          nombre_sede: String(fila[30] || '').trim()
+        });
+      }
+
+      return mapaMaestro;
+    }
+
+    function buscarEnMaestro(rutNormalizado, mapaMaestro) {
+      if (mapaMaestro.has(rutNormalizado)) return mapaMaestro.get(rutNormalizado);
+      const rutSinDv = rutNormalizado.split('-')[0];
+      if (mapaMaestro.has(rutSinDv)) return mapaMaestro.get(rutSinDv);
+      return null;
+    }
+
+    function construirResultados(mapaCredito, mapaAhorro, mapaRex, mapaMaestro) {
+      const universo = new Set([
+        ...mapaCredito.keys(),
+        ...mapaAhorro.keys(),
+        ...mapaRex.keys()
+      ]);
+
+      const resultados = [];
+
+      for (const rut of universo) {
+        const montoCajaCredito = mapaCredito.get(rut) || 0;
+        const montoCajaAhorro = mapaAhorro.get(rut) || 0;
+        const datosRex = mapaRex.get(rut) || null;
+        const montoRexCredito = datosRex ? datosRex.montoCredito : 0;
+        const montoRexAhorro = datosRex ? datosRex.montoAhorro : 0;
+        const datosMaestro = buscarEnMaestro(rut, mapaMaestro);
+
+        const difCredito = Math.abs(montoCajaCredito - montoRexCredito) > 1;
+        const difAhorro = Math.abs(montoCajaAhorro - montoRexAhorro) > 1;
+
+        if (!mapaCredito.has(rut) && !mapaAhorro.has(rut) && montoRexCredito === 0 && montoRexAhorro === 0) {
+          continue;
+        }
+
+        let estado = '✅';
+        let motivo = 'OK';
+
+        if (!datosRex) {
+          estado = '❌';
+          motivo = 'RUT en Caja no encontrado en Rex';
+        } else if (difCredito || difAhorro) {
+          estado = '⚠️';
+          const partes = [];
+
+          if (difCredito) {
+            partes.push(`Credito: Caja ${formatMonto(montoCajaCredito)} vs Rex ${formatMonto(montoRexCredito)}`);
+          }
+
+          if (difAhorro) {
+            partes.push(`Ahorro: Caja ${formatMonto(montoCajaAhorro)} vs Rex ${formatMonto(montoRexAhorro)}`);
+          }
+
+          motivo = 'Diferencia en ' + partes.join(' | ');
+        }
+
+        if (estado !== '✅' && datosMaestro && normalizarTexto(datosMaestro.estado) !== 'activo') {
+          motivo = `Empleado ${datosMaestro.estado || 'inactivo'} en Maestro | ${motivo}`;
+        }
+
+        resultados.push({
+          rut,
+          nombre: datosMaestro?.nombre_completo || datosRex?.nombre || '—',
+          empresa: datosMaestro?.nombre_empresa || '—',
+          sede: datosMaestro?.nombre_sede || '—',
+          estadoEmpleado: datosMaestro?.estado || 'No en Maestro',
+          montoCajaCredito,
+          montoRexCredito,
+          montoCajaAhorro,
+          montoRexAhorro,
+          estado,
+          motivo
+        });
+      }
+
+      const orden = { '❌': 0, '⚠️': 1, '✅': 2 };
+      resultados.sort((a, b) => {
+        const ordenEstado = orden[a.estado] - orden[b.estado];
+        if (ordenEstado !== 0) return ordenEstado;
+        return a.rut.localeCompare(b.rut, 'es');
+      });
+
+      return resultados;
+    }
+
+    function porcentaje(parte, total) {
+      if (!total) return '0% del total';
+      return `${Math.round((parte / total) * 100)}% del total`;
+    }
+
+    function getResultadosFiltrados() {
+      if (state.filtroActual === 'all') return state.resultados;
+      return state.resultados.filter((item) => item.estado === state.filtroActual);
+    }
+
+    function rowClassByEstado(estado) {
+      if (estado === '✅') return 'bg-[#f0fdf4]';
+      if (estado === '⚠️') return 'bg-[#fefce8]';
+      return 'bg-[#fef2f2]';
+    }
+
+    function renderResumen() {
+      const total = state.resultados.length;
+      const ok = state.resultados.filter((item) => item.estado === '✅').length;
+      const diff = state.resultados.filter((item) => item.estado === '⚠️').length;
+      const error = state.resultados.filter((item) => item.estado === '❌').length;
+
+      refs.summaryTotal.textContent = total.toLocaleString('es-CL');
+      refs.summaryOk.textContent = ok.toLocaleString('es-CL');
+      refs.summaryDiff.textContent = diff.toLocaleString('es-CL');
+      refs.summaryError.textContent = error.toLocaleString('es-CL');
+      refs.summaryOkPct.textContent = porcentaje(ok, total);
+      refs.summaryDiffPct.textContent = porcentaje(diff, total);
+      refs.summaryErrorPct.textContent = porcentaje(error, total);
+    }
+
+    function renderTable() {
+      const resultados = getResultadosFiltrados();
+
+      if (!resultados.length) {
+        refs.resultsBody.innerHTML = `
+          <tr>
+            <td colspan="11" class="px-4 py-10 text-center text-sm text-slate-500">
+              No hay registros para el filtro seleccionado.
+            </td>
+          </tr>
+        `;
+      } else {
+        refs.resultsBody.innerHTML = resultados.map((item) => `
+          <tr class="${rowClassByEstado(item.estado)} text-sm text-slate-800">
+            <td class="px-4 py-4 font-semibold">${item.estado}</td>
+            <td class="px-4 py-4 font-medium">${item.rut}</td>
+            <td class="px-4 py-4">${item.nombre}</td>
+            <td class="px-4 py-4">${item.empresa}</td>
+            <td class="px-4 py-4">${item.sede}</td>
+            <td class="px-4 py-4">${item.estadoEmpleado}</td>
+            <td class="px-4 py-4 font-medium">${formatMonto(item.montoCajaCredito)}</td>
+            <td class="px-4 py-4 font-medium">${formatMonto(item.montoRexCredito)}</td>
+            <td class="px-4 py-4 font-medium">${formatMonto(item.montoCajaAhorro)}</td>
+            <td class="px-4 py-4 font-medium">${formatMonto(item.montoRexAhorro)}</td>
+            <td class="px-4 py-4 leading-6 min-w-[320px] text-slate-700">${item.motivo}</td>
+          </tr>
+        `).join('');
+      }
+
+      refs.resultsCount.textContent = `Mostrando ${resultados.length.toLocaleString('es-CL')} de ${state.resultados.length.toLocaleString('es-CL')} registros.`;
+    }
+
+    function renderResultados() {
+      renderResumen();
+      renderTable();
+      refs.resultsSection.classList.remove('hidden');
+    }
+
+    function exportarExcel() {
+      const resultadosFiltrados = getResultadosFiltrados();
+      const headers = [
+        'Estado', 'RUT', 'Nombre', 'Empresa', 'Sede',
+        'Estado Empleado', 'Caja Credito $', 'Rex Credito $',
+        'Caja Ahorro $', 'Rex Ahorro $', 'Motivo'
+      ];
+
+      const filas = resultadosFiltrados.map((item) => [
+        item.estado,
+        item.rut,
+        item.nombre,
+        item.empresa,
+        item.sede,
+        item.estadoEmpleado,
+        item.montoCajaCredito,
+        item.montoRexCredito,
+        item.montoCajaAhorro,
+        item.montoRexAhorro,
+        item.motivo
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...filas]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Resultado Auditoria');
+
+      const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const nombreArchivo = `Auditoria_CajaComp_${state.empresa}_${fecha}.xlsx`;
+      XLSX.writeFile(wb, nombreArchivo);
+    }
+
+    async function ejecutarAuditoria() {
+      ocultarBanner();
+      setExecuting(true);
+
+      try {
+        const [wbCredito, wbAhorro, wbRex, wbMaestro] = await Promise.all([
+          readWorkbook(state.files.credito.file),
+          readWorkbook(state.files.ahorro.file),
+          readWorkbook(state.files.rex.file),
+          readWorkbook(state.files.maestro.file)
+        ]);
+
+        const mapaCredito = parseCredito(sheetToRows(wbCredito));
+        const mapaAhorro = parseAhorro(sheetToRows(wbAhorro));
+        const mapaRex = parseRex(sheetToRows(wbRex));
+        const mapaMaestro = parseMaestro(sheetToRows(wbMaestro));
+
+        state.resultados = construirResultados(mapaCredito, mapaAhorro, mapaRex, mapaMaestro);
+        state.filtroActual = 'all';
+        setFilterButtonState();
+        renderResultados();
+        mostrarBanner('success', `Auditoria completada con ${state.resultados.length.toLocaleString('es-CL')} registros procesados.`);
+      } catch (error) {
+        console.error(error);
+        mostrarBanner('error', 'No fue posible procesar uno o mas archivos. Revisa la estructura de los Excel y vuelve a intentarlo.');
+      } finally {
+        setExecuting(false);
+      }
+    }
+
+    function isValidXlsx(file) {
+      return file && /\.xlsx$/i.test(file.name);
+    }
+
+    function handleFileSelection(key, file) {
+      if (!file) return;
+
+      if (!isValidXlsx(file)) {
+        state.files[key] = { error: 'Solo se aceptan archivos .xlsx' };
+      } else {
+        state.files[key] = { file };
+      }
+
+      refs.resultsSection.classList.add('hidden');
+      ocultarBanner();
+      setDropzoneState(key);
+      updateRunState();
+    }
+
+    function setupDropzones() {
+      document.querySelectorAll('.dropzone').forEach((zone) => {
+        const key = zone.dataset.fileKey;
+        const { input } = getDropzoneElements(key);
+
+        zone.addEventListener('click', () => input.click());
+
+        input.addEventListener('change', (event) => {
+          const [file] = event.target.files || [];
+          handleFileSelection(key, file);
+        });
+
+        zone.addEventListener('dragover', (event) => {
+          event.preventDefault();
+          zone.classList.add('dropzone-active');
+        });
+
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('dropzone-active');
+        });
+
+        zone.addEventListener('drop', (event) => {
+          event.preventDefault();
+          zone.classList.remove('dropzone-active');
+          const [file] = event.dataTransfer.files || [];
+          handleFileSelection(key, file);
+        });
+      });
+    }
+
+    refs.empresaSelect.addEventListener('change', (event) => {
+      state.empresa = event.target.value;
+      resetFilesAndResults();
+    });
+
+    refs.runButton.addEventListener('click', () => {
+      if (!refs.runButton.disabled) {
+        ejecutarAuditoria();
+      }
+    });
+
+    refs.exportBtn.addEventListener('click', exportarExcel);
+
+    document.querySelectorAll('.filter-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.filtroActual = button.dataset.filter;
+        setFilterButtonState();
+        renderTable();
+      });
+    });
+
+    setupDropzones();
+    FILE_KEYS.forEach(setDropzoneState);
+    setFilterButtonState();
+    updateRunState();
+  </script>
+</body>
+</html>
