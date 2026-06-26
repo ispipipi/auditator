@@ -523,20 +523,26 @@
 
     function parseCredito(rows) {
       const mapaCredito = new Map();
+      let ultimoRut = ''; // propagar RUT cuando la celda está vacía en filas secundarias
 
       for (let index = 19; index < rows.length; index += 1) {
         const fila = rows[index] || [];
         const rutRaw = fila[1];
-        const montoRaw = fila[8]; // col I = "Valor a Descontar" (corregido: era [6] = Codigo)
+        const montoRaw = fila[8]; // col I = "Valor a Descontar"
 
-        if (!rutRaw || String(rutRaw).includes('SUBSTITUTE')) continue;
-        if (!rutRaw || !montoRaw) continue;
+        if (rutRaw && String(rutRaw).includes('SUBSTITUTE')) continue;
 
-        const rut = normalizarRut(rutRaw);
+        // Si la celda de RUT tiene valor, actualizarlo; si está vacía usar el último RUT
+        if (rutRaw && String(rutRaw).trim()) {
+          ultimoRut = normalizarRut(rutRaw);
+        }
+
+        if (!ultimoRut || !montoRaw) continue;
+
         const monto = parsearMonto(montoRaw);
 
-        if (rut && monto > 0) {
-          mapaCredito.set(rut, (mapaCredito.get(rut) || 0) + monto);
+        if (ultimoRut && monto > 0) {
+          mapaCredito.set(ultimoRut, (mapaCredito.get(ultimoRut) || 0) + monto);
         }
       }
 
