@@ -860,7 +860,7 @@
       return file && /\.xlsx$/i.test(file.name);
     }
 
-    function handleFileSelection(key, file) {
+    async function handleFileSelection(key, file) {
       if (!file) return;
 
       if (!isValidXlsx(file)) {
