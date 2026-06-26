@@ -101,10 +101,7 @@
               id="empresa-select"
               class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm outline-none transition focus:border-auditCyan focus:ring-4 focus:ring-cyan-100"
             >
-              <option value="" selected disabled>-- Selecciona empresa --</option>
-              <option value="FBO">FBO (Santiago F.B.O. SPA)</option>
-              <option value="Kaipoki">Kaipoki (Kaipoki SPA)</option>
-              <option value="Progreso">Progreso (Comercial Progreso SPA)</option>
+              <option value="" selected disabled>-- Carga el Detalle Rex primero --</option>
             </select>
             <p class="mt-3 text-xs leading-5 text-slate-500">
               Al cambiar de empresa se limpia la carga actual para evitar cruces inconsistentes.
@@ -278,11 +275,8 @@
   </div>
 
   <script>
-    const EMPRESA_MAP = {
-      FBO: 'food beverage organization spa',
-      Kaipoki: 'kaipoki spa',
-      Progreso: 'comercial progreso spa'
-    };
+    // Empresas detectadas dinámicamente desde el Detalle Rex
+    let EMPRESAS_REX = []; // [{ label, value }] donde value es el nombre exacto lowercase
 
     const FILE_KEYS = ['credito', 'ahorro', 'rex', 'maestro'];
     const FILE_LABELS = {
@@ -479,6 +473,35 @@
       });
     }
 
+    function detectarEmpresasDeRex(rows) {
+      // Buscar índice de "Nombre empresa" en fila de headers (índice 4)
+      const headers = rows[4] || [];
+      const iEmpresa = headers.findIndex(h => normalizarTexto(h) === 'nombre empresa');
+      const idx = iEmpresa >= 0 ? iEmpresa : 1;
+
+      const set = new Set();
+      for (let i = 5; i < rows.length; i++) {
+        const val = String(rows[i][idx] || '').trim();
+        if (val) set.add(val);
+      }
+      return Array.from(set).sort();
+    }
+
+    function poblarDropdownEmpresas(empresas) {
+      const select = refs.empresaSelect;
+      const valorActual = state.empresa;
+      select.innerHTML = '<option value="" disabled>-- Selecciona empresa --</option>';
+      empresas.forEach(nombre => {
+        const opt = document.createElement('option');
+        opt.value = normalizarTexto(nombre);
+        opt.textContent = nombre;
+        if (opt.value === valorActual) opt.selected = true;
+        select.appendChild(opt);
+      });
+      if (!valorActual) select.options[0].selected = true;
+      EMPRESAS_REX = empresas.map(n => ({ label: n, value: normalizarTexto(n) }));
+    }
+
     async function readWorkbook(file) {
       const buffer = await file.arrayBuffer();
       return XLSX.read(buffer, {
@@ -544,22 +567,44 @@
 
     function parseRex(rows) {
       const mapaRex = new Map();
-      const empresaFiltro = EMPRESA_MAP[state.empresa];
+      const empresaFiltro = state.empresa; // ya es el nombre exacto en lowercase
+
+      // Buscar índices por nombre de columna en fila 5 (índice 4) — robusto ante desfases de SheetJS
+      const headers = rows[4] || [];
+      function colIdx(nombre) {
+        return headers.findIndex(h => normalizarTexto(h) === normalizarTexto(nombre));
+      }
+      const iEmpresa  = colIdx('Nombre empresa');
+      const iNombre   = colIdx('Nombre');
+      const iRut      = colIdx('Rut');
+      const iCajaCred = colIdx('Creditos personales CCAF');
+      const iCajaVida = colIdx('Descuentos por seguro de vida CCAF');
+      const iCajaAhor = colIdx('Ahorro en CCAF');
+
+      // Fallback a índices fijos si no se encuentran los headers
+      const idxEmpresa  = iEmpresa  >= 0 ? iEmpresa  : 1;
+      const idxNombre   = iNombre   >= 0 ? iNombre   : 4;
+      const idxRut      = iRut      >= 0 ? iRut      : 5;
+      const idxCajaCred = iCajaCred >= 0 ? iCajaCred : 56;
+      const idxCajaVida = iCajaVida >= 0 ? iCajaVida : 57;
+      const idxCajaAhor = iCajaAhor >= 0 ? iCajaAhor : 58;
+
+      console.log('[Rex] Índices detectados:', { idxEmpresa, idxRut, idxCajaCred, idxCajaVida, idxCajaAhor });
 
       for (let index = 5; index < rows.length; index += 1) {
         const fila = rows[index] || [];
-        const nombreEmpresa = normalizarTexto(fila[1]);
+        const nombreEmpresa = normalizarTexto(fila[idxEmpresa]);
         if (nombreEmpresa !== empresaFiltro) continue;
 
-        const rutRaw = fila[5];
+        const rutRaw = fila[idxRut];
         if (!rutRaw) continue;
 
         const rut = normalizarRut(rutRaw);
         if (!rut) continue;
 
-        const cajaCred = parsearMonto(fila[56]);
-        const cajaVida = parsearMonto(fila[57]);
-        const cajaAhor = parsearMonto(fila[58]);
+        const cajaCred = parsearMonto(fila[idxCajaCred]);
+        const cajaVida = parsearMonto(fila[idxCajaVida]);
+        const cajaAhor = parsearMonto(fila[idxCajaAhor]);
 
         const anterior = mapaRex.get(rut) || {
           nombre: '',
@@ -568,7 +613,7 @@
         };
 
         mapaRex.set(rut, {
-          nombre: anterior.nombre || String(fila[4] || '').trim(),
+          nombre: anterior.nombre || String(fila[idxNombre] || '').trim(),
           montoCredito: anterior.montoCredito + cajaCred + cajaVida,
           montoAhorro: anterior.montoAhorro + cajaAhor
         });
@@ -827,6 +872,22 @@
       refs.resultsSection.classList.add('hidden');
       ocultarBanner();
       setDropzoneState(key);
+
+      // Si es el Detalle Rex, detectar empresas y poblar dropdown
+      if (key === 'rex' && state.files.rex && state.files.rex.file) {
+        try {
+          const wb = await readWorkbook(state.files.rex.file);
+          const rows = sheetToRows(wb);
+          const empresas = detectarEmpresasDeRex(rows);
+          poblarDropdownEmpresas(empresas);
+          // Resetear empresa seleccionada
+          state.empresa = '';
+          updateRunState();
+        } catch (e) {
+          console.warn('No se pudo detectar empresas del Rex:', e);
+        }
+      }
+
       updateRunState();
     }
 
@@ -861,8 +922,12 @@
     }
 
     refs.empresaSelect.addEventListener('change', (event) => {
-      state.empresa = event.target.value;
-      resetFilesAndResults();
+      state.empresa = event.target.value; // nombre lowercase exacto
+      // No resetear archivos al cambiar empresa (ya están cargados)
+      state.resultados = [];
+      refs.resultsSection.classList.add('hidden');
+      ocultarBanner();
+      updateRunState();
     });
 
     refs.runButton.addEventListener('click', () => {
