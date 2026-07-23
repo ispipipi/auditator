@@ -575,27 +575,34 @@
       const mapaRex = new Map();
       const empresaFiltro = state.empresa; // ya es el nombre exacto en lowercase
 
-      // Buscar índices por nombre de columna en fila 5 (índice 4) — robusto ante desfases de SheetJS
-      const headers = rows[4] || [];
-      function colIdx(nombre) {
-        return headers.findIndex(h => normalizarTexto(h) === normalizarTexto(nombre));
+      // Algunos archivos exponen nombres técnicos en la fila 4 y legibles en la fila 5.
+      const headersTecnicos = rows[3] || [];
+      const headersLegibles = rows[4] || [];
+
+      function colIdx(...nombres) {
+        for (const headers of [headersTecnicos, headersLegibles]) {
+          for (const nombre of nombres) {
+            const idx = headers.findIndex(h => normalizarTexto(h) === normalizarTexto(nombre));
+            if (idx >= 0) return idx;
+          }
+        }
+
+        return -1;
       }
-      const iEmpresa  = colIdx('Nombre empresa');
-      const iNombre   = colIdx('Nombre');
-      const iRut      = colIdx('Rut');
-      const iCajaCred = colIdx('Creditos personales CCAF');
-      const iCajaVida = colIdx('Descuentos por seguro de vida CCAF');
-      const iCajaAhor = colIdx('Ahorro en CCAF');
+      const iEmpresa  = colIdx('nombre empresa');
+      const iNombre   = colIdx('nombre');
+      const iRut      = colIdx('rut');
+      const iCajaCred = colIdx('cajaCred', 'creditos personales ccaf');
+      const iCajaVida = colIdx('cajaVida', 'descuentos por seguro de vida ccaf');
+      const iCajaAhor = colIdx('cajaAhor', 'ahorro en ccaf');
 
       // Fallback a índices fijos si no se encuentran los headers
       const idxEmpresa  = iEmpresa  >= 0 ? iEmpresa  : 1;
       const idxNombre   = iNombre   >= 0 ? iNombre   : 4;
       const idxRut      = iRut      >= 0 ? iRut      : 5;
-      const idxCajaCred = iCajaCred >= 0 ? iCajaCred : 56;
-      const idxCajaVida = iCajaVida >= 0 ? iCajaVida : 57;
-      const idxCajaAhor = iCajaAhor >= 0 ? iCajaAhor : 58;
-
-      console.log('[Rex] Índices detectados:', { idxEmpresa, idxRut, idxCajaCred, idxCajaVida, idxCajaAhor });
+      const idxCajaCred = iCajaCred >= 0 ? iCajaCred : 45;
+      const idxCajaVida = iCajaVida >= 0 ? iCajaVida : 46;
+      const idxCajaAhor = iCajaAhor >= 0 ? iCajaAhor : 47;
 
       for (let index = 5; index < rows.length; index += 1) {
         const fila = rows[index] || [];
