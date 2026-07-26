@@ -947,6 +947,7 @@
         cajaAhorro: columns.get('cajaAhor', 'Ahorro en CCAF'),
         cajaComp: columns.get('cajaComp', 'Aporte a CCAF'),
         imponible: columns.get('habeSinTope', 'Total imponible sin tope'),
+        diasTrabajados: columns.get('dtr', 'Días Trabajados', 'Dias Trabajados'),
         sindicato1: columns.get('sindicato', 'Sindicato'),
         sindicato2: columns.get('Sindicato 2'),
         tipoContrato: columns.get('tipoContrato', 'Tipo Contrato'),
@@ -988,6 +989,7 @@
           cajaAhorro: parseAmount(getCell(row, indexes.cajaAhorro)),
           cajaComp: parseAmount(getCell(row, indexes.cajaComp)),
           imponible: parseAmount(getCell(row, indexes.imponible)),
+          diasTrabajados: parseInt(String(getCell(row, indexes.diasTrabajados) || '0').replace(/[^0-9]/g,''), 10) || 0,
           sindicato1: String(getCell(row, indexes.sindicato1) || '').trim(),
           sindicato2: String(getCell(row, indexes.sindicato2) || '').trim(),
           tipoContrato: String(getCell(row, indexes.tipoContrato) || '').trim(),
@@ -1462,6 +1464,8 @@
         .replace(/\u00A0/g, ' ')
         .replace(/[ \t]+/g, ' ')
         .replace(/\n{2,}/g, '\n')
+        // Normalizar RUT con puntos de miles: 13.656.896-5 → 13656896-5
+        .replace(/(\d{1,2})\.(\d{3})\.(\d{3})/g, '$1$2$3')
         .trim();
     }
 
@@ -1558,15 +1562,25 @@
         const external = externalByRut.get(rut)?.amount || 0;
         const context = contextForRut(rut);
         const reference = externalByRut.get(rut)?.references.join(' | ') || 'Sin documento';
+        const diasTrabajados = context.detail?.diasTrabajados ?? null;
+        const enLibro = libroByRut.has(rut) || detailRecords.some(r => r.rut === rut);
 
         if (Math.abs(libro - external) <= 1) return;
 
         const severity = libro && external ? 'alta' : 'media';
-        const detail = libro && external
-          ? 'Monto Fonasa distinto entre libro y documento.'
-          : libro
-            ? 'Existe descuento Fonasa en libro pero no fue encontrado en los documentos.'
-            : 'Existe prestamo Fonasa en documento pero no aparece descontado en el libro.';
+
+        let detail;
+        if (libro && external) {
+          detail = `Monto distinto: libro ${formatAmount(libro)} vs documento ${formatAmount(external)}.`;
+        } else if (libro) {
+          detail = 'Descuento registrado en libro pero no encontrado en documentos Fonasa.';
+        } else if (!enLibro) {
+          detail = 'Persona en planilla Fonasa pero no aparece en el libro del período (posiblemente no vigente).';
+        } else if (diasTrabajados !== null && diasTrabajados <= 15) {
+          detail = `Planilla Fonasa informada pero persona trabajó solo ${diasTrabajados} día(s) — posiblemente no corresponde descontar.`;
+        } else {
+          detail = 'Planilla Fonasa informada pero sin descuento registrado en el libro.';
+        }
 
         findings.push(createFinding(
           'fonasa',
