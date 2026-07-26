@@ -3,125 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AUDITATOR | Reglas de Nomina</title>
+  <title>AUDITATOR | Reglas de Nómina</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script>
-    tailwind = {
-      config: {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace']
-            },
-            colors: {
-              ink:    '#0D1117',
-              ink2:   '#161B22',
-              ink3:   '#21262D',
-              border: '#30363D',
-              muted:  '#8B949E',
-              text:   '#C9D1D9',
-              bright: '#F0F6FC',
-              accent: '#2F81F7',
-              accentHover: '#388BFD',
-              good:   '#3FB950',
-              warn:   '#D29922',
-              danger: '#F85149',
-              dangerBg: 'rgba(248,81,73,0.1)',
-              warnBg:   'rgba(210,153,34,0.1)',
-              goodBg:   'rgba(63,185,80,0.1)',
-              accentBg: 'rgba(47,129,247,0.1)'
-            }
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            surface:     '#F8FAFC',
+            'surface-0': '#FFFFFF',
+            'surface-1': '#F1F5F9',
+            border:      '#E2E8F0',
+            ink:         '#0F172A',
+            'ink-2':     '#64748B',
+            'ink-3':     '#94A3B8',
+            primary:     '#2563EB',
+            'primary-dk':'#1D4ED8',
+            'primary-lt':'#EFF6FF',
+            ok:          '#16A34A',
+            'ok-lt':     '#DCFCE7',
+            warn:        '#D97706',
+            'warn-lt':   '#FEF3C7',
+            danger:      '#DC2626',
+            'danger-lt': '#FEE2E2',
+            header:      '#0F172A'
+          },
+          fontSize: {
+            'caps': ['11px', { lineHeight: '16px', letterSpacing: '0.06em', fontWeight: '700' }]
+          },
+          boxShadow: {
+            card: '0 1px 3px rgba(0,0,0,0.08)',
+            'card-md': '0 4px 12px rgba(0,0,0,0.08)'
           }
         }
       }
     };
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    body { background: #0D1117; color: #C9D1D9; font-family: 'Inter', sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: #F8FAFC; color: #0F172A; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
 
+    /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #8B949E; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-    .dropzone-active { border-color: #2F81F7 !important; background: rgba(47,129,247,0.06) !important; }
-    .dropzone-error  { border-color: #F85149 !important; background: rgba(248,81,73,0.06) !important; }
+    /* Dropzones */
+    .dropzone { transition: border-color 0.15s, background 0.15s; }
+    .dropzone-active { border-color: #2563EB !important; background: #EFF6FF !important; }
+    .dropzone-error  { border-color: #DC2626 !important; background: #FEF2F2 !important; }
 
-    .badge-alta   { background: rgba(248,81,73,0.15);  color: #F85149; border: 1px solid rgba(248,81,73,0.3); }
-    .badge-media  { background: rgba(210,153,34,0.15); color: #D29922; border: 1px solid rgba(210,153,34,0.3); }
-    .badge-baja   { background: rgba(47,129,247,0.15); color: #2F81F7; border: 1px solid rgba(47,129,247,0.3); }
+    /* Badges de severidad */
+    .badge-alta  { background: #FEE2E2; color: #DC2626; }
+    .badge-media { background: #FEF3C7; color: #D97706; }
+    .badge-baja  { background: #DBEAFE; color: #2563EB; }
 
-    .row-alta  { background: rgba(248,81,73,0.04); }
-    .row-media { background: rgba(210,153,34,0.04); }
-    .row-baja  { background: transparent; }
+    /* Filas de tabla por severidad */
+    .row-alta  { background: #FFF5F5; }
+    .row-media { background: #FFFBEB; }
+    .row-baja  { background: #FFFFFF; }
+    .row-alta:hover  { background: #FEE2E2; }
+    .row-media:hover { background: #FEF3C7; }
+    .row-baja:hover  { background: #F8FAFC; }
 
-    .card { background: #161B22; border: 1px solid #30363D; border-radius: 12px; }
-    .card-hover { transition: border-color 0.15s; }
-    .card-hover:hover { border-color: #8B949E; }
+    /* Cards */
+    .card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .card-interactive { cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+    .card-interactive:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #CBD5E1; }
 
+    /* Botones */
     .btn-primary {
-      background: #2F81F7; color: #fff; border-radius: 8px;
+      background: #2563EB; color: #fff; border-radius: 8px; border: none;
       font-weight: 600; font-size: 14px; padding: 10px 20px;
-      border: none; cursor: pointer; transition: background 0.15s;
-      display: inline-flex; align-items: center; gap: 8px;
+      cursor: pointer; transition: background 0.15s, box-shadow 0.15s;
+      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
     }
-    .btn-primary:hover:not(:disabled) { background: #388BFD; }
-    .btn-primary:disabled { background: #21262D; color: #8B949E; cursor: not-allowed; }
+    .btn-primary:hover:not(:disabled) { background: #1D4ED8; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+    .btn-primary:disabled { background: #E2E8F0; color: #94A3B8; cursor: not-allowed; box-shadow: none; }
 
-    .btn-ghost {
-      background: transparent; color: #C9D1D9;
-      border: 1px solid #30363D; border-radius: 8px;
+    .btn-secondary {
+      background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0; border-radius: 8px;
+      font-weight: 500; font-size: 13px; padding: 8px 14px;
+      cursor: pointer; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .btn-secondary:hover { background: #F8FAFC; border-color: #CBD5E1; }
+    .btn-secondary.active { background: #2563EB; border-color: #2563EB; color: #fff; }
+
+    .btn-ghost-white {
+      background: transparent; color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
       font-weight: 500; font-size: 13px; padding: 7px 14px;
       cursor: pointer; transition: all 0.15s;
       display: inline-flex; align-items: center; gap: 6px;
     }
-    .btn-ghost:hover { background: #21262D; border-color: #8B949E; }
-    .btn-ghost.active { background: #2F81F7; border-color: #2F81F7; color: #fff; }
+    .btn-ghost-white:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
-    .select-dark {
-      background: #161B22; border: 1px solid #30363D; color: #C9D1D9;
-      border-radius: 8px; padding: 8px 12px; font-size: 14px;
+    /* Select */
+    .select-light {
+      background: #FFFFFF; border: 1px solid #E2E8F0; color: #0F172A;
+      border-radius: 8px; padding: 9px 12px; font-size: 14px;
       font-family: 'Inter', sans-serif; outline: none; width: 100%;
-      cursor: pointer; transition: border-color 0.15s;
+      cursor: pointer; transition: border-color 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    .select-dark:focus { border-color: #2F81F7; }
+    .select-light:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
+    /* Pills */
     .pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 2px 8px; border-radius: 999px; font-size: 11px;
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: 999px; font-size: 11px;
       font-weight: 600; letter-spacing: 0.03em;
     }
 
-    .tag {
-      display: inline-block; padding: 2px 8px; border-radius: 4px;
-      font-size: 11px; font-weight: 500;
-      background: #21262D; color: #8B949E; border: 1px solid #30363D;
-    }
+    /* KPI numbers */
+    .kpi-num { font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
 
-    thead th { position: sticky; top: 0; z-index: 1; }
+    /* Tabla */
+    thead th { position: sticky; top: 0; z-index: 2; background: #F1F5F9; }
+    tbody tr { border-bottom: 1px solid #F1F5F9; transition: background 0.1s; }
 
-    .rule-card-ok     { border-left: 3px solid #3FB950; }
-    .rule-card-alert  { border-left: 3px solid #D29922; }
-
-    .kpi-num { font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
-
-    .step-num {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: #21262D; border: 1px solid #30363D;
-      font-size: 11px; font-weight: 700; color: #8B949E;
+    /* Step numbers */
+    .step-badge {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      background: #E2E8F0; color: #64748B;
+      font-size: 10px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
     }
-    .step-num.done { background: rgba(63,185,80,0.15); border-color: #3FB950; color: #3FB950; }
-    .step-num.active { background: rgba(47,129,247,0.15); border-color: #2F81F7; color: #2F81F7; }
+    .step-badge.loaded { background: #DCFCE7; color: #16A34A; }
 
-    .fonasa-state { font-size: 11px; color: #8B949E; }
+    /* Divider */
+    .divider { height: 1px; background: #E2E8F0; }
+
+    /* Status dot */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #16A34A; animation: pulse 2s infinite; flex-shrink:0; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -642,11 +665,11 @@
     function showBanner(type, message) {
       refs.feedbackBanner.className = 'mb-5';
       if (type === 'error') {
-        refs.feedbackBanner.setAttribute('style', 'border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid rgba(248,81,73,0.3);background:rgba(248,81,73,0.1);color:#F85149;');
+        refs.feedbackBanner.setAttribute('style', 'border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid #FEE2E2;background:#FFF5F5;color:#DC2626;');
       } else if (type === 'success') {
-        refs.feedbackBanner.setAttribute('style', 'border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid rgba(63,185,80,0.3);background:rgba(63,185,80,0.1);color:#3FB950;');
+        refs.feedbackBanner.setAttribute('style', 'border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid #DCFCE7;background:#F0FDF4;color:#16A34A;');
       } else {
-        refs.feedbackBanner.setAttribute('style', 'border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid rgba(47,129,247,0.3);background:rgba(47,129,247,0.1);color:#2F81F7;');
+        refs.feedbackBanner.setAttribute('style', 'border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid #BFDBFE;background:#EFF6FF;color:#2563EB;');
       }
       refs.feedbackBanner.textContent = message;
       refs.feedbackBanner.classList.remove('hidden');
@@ -692,7 +715,7 @@
 
         meta.innerHTML = `
           <div style="text-align:left;">
-            <p style="font-size:11px;font-weight:600;color:#3FB950;margin-bottom:4px;">✓ ${entry.length} archivo${entry.length > 1 ? 's' : ''} · ${formatBytes(size)}</p>
+            <p style="font-size:11px;font-weight:600;color:#16A34A;margin-bottom:4px;">✓ ${entry.length} archivo${entry.length > 1 ? 's' : ''} · ${formatBytes(size)}</p>
             ${names.replace(/<li class="truncate">/g,'<p style="font-size:10px;color:#8B949E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">').replace(/<\/li>/g,'</p>')}
             ${extra.replace('mt-2 text-xs text-slate-500','').replace('<p ','<p style="font-size:10px;color:#8B949E;" ')}
           </div>
@@ -704,8 +727,8 @@
       if (entry && entry.file) {
         meta.innerHTML = `
           <div style="text-align:left;">
-            <p style="font-size:11px;font-weight:600;color:#3FB950;margin-bottom:4px;">✓ ${formatBytes(entry.file.size)}</p>
-            <p style="font-size:10px;color:#8B949E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${entry.file.name}">${entry.file.name}</p>
+            <p style="font-size:11px;font-weight:600;color:#16A34A;margin-bottom:4px;">✓ ${formatBytes(entry.file.size)}</p>
+            <p style="font-size:10px;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${entry.file.name}">${entry.file.name}</p>
           </div>
         `;
         meta.classList.remove('hidden');
@@ -735,14 +758,14 @@
     function renderGroupPanel() {
       const group = currentGroupConfig();
       refs.groupCompanyList.innerHTML = group.companies.map((company) => `
-        <span style="font-size:11px;color:#8B949E;padding:2px 0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${company}">· ${company}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.55);padding:2px 0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${company}">· ${company}</span>
       `).join('');
       refs.groupNote.textContent = group.note;
 
       refs.ruleList.innerHTML = RULE_DEFINITIONS.map((rule, index) => `
-        <li style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #21262D;">
-          <span style="font-size:10px;font-weight:700;color:#8B949E;min-width:16px;padding-top:1px;">${index + 1}.</span>
-          <span style="font-size:11px;color:#C9D1D9;line-height:1.4;">${rule.title}</span>
+        <li style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #F1F5F9;">
+          <span style="font-size:10px;font-weight:700;color:#CBD5E1;min-width:16px;padding-top:1px;">${index + 1}.</span>
+          <span style="font-size:11px;color:#64748B;line-height:1.4;">${rule.title}</span>
         </li>
       `).join('');
     }
@@ -816,7 +839,7 @@
     function setFilterButtons() {
       document.querySelectorAll('.filter-btn').forEach((button) => {
         const active = button.dataset.filter === state.filter;
-        button.className = active ? 'btn-ghost active filter-btn' : 'btn-ghost filter-btn';
+        button.className = active ? 'btn-secondary active filter-btn' : 'btn-secondary filter-btn';
       });
     }
 
@@ -1532,16 +1555,16 @@
       refs.summaryFonasaNote.textContent = `${state.fonasaDocuments.toLocaleString('es-CL')} archivos leidos para la conciliacion`;
 
       refs.ruleSummaryGrid.innerHTML = state.summaries.map((summary) => `
-        <div style="border-radius:8px;border:1px solid ${summary.findingCount ? 'rgba(210,153,34,0.3)' : 'rgba(63,185,80,0.2)'};background:${summary.findingCount ? 'rgba(210,153,34,0.04)' : 'rgba(63,185,80,0.04)'};padding:14px;border-left:3px solid ${summary.findingCount ? '#D29922' : '#3FB950'};">
+        <div style="border-radius:10px;border:1px solid ${summary.findingCount ? '#FEE2E2' : '#DCFCE7'};background:${summary.findingCount ? '#FFF5F5' : '#F0FDF4'};padding:14px;border-left:4px solid ${summary.findingCount ? '#DC2626' : '#16A34A'};">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
-              <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${summary.findingCount ? '#D29922' : '#3FB950'};margin-bottom:4px;">${summary.status}</p>
-              <p style="font-size:13px;font-weight:600;color:#F0F6FC;line-height:1.3;">${summary.title}</p>
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${summary.findingCount ? '#DC2626' : '#16A34A'};margin-bottom:4px;">${summary.status}</p>
+              <p style="font-size:13px;font-weight:600;color:#0F172A;line-height:1.3;">${summary.title}</p>
             </div>
-            <span style="flex-shrink:0;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${summary.findingCount ? 'rgba(210,153,34,0.15)' : 'rgba(63,185,80,0.15)'};color:${summary.findingCount ? '#D29922' : '#3FB950'};">${summary.findingCount} hallazgos</span>
+            <span style="flex-shrink:0;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;background:${summary.findingCount ? '#FEE2E2' : '#DCFCE7'};color:${summary.findingCount ? '#DC2626' : '#16A34A'};">${summary.findingCount} hallazgos</span>
           </div>
-          <p style="font-size:11px;color:#8B949E;line-height:1.5;">${summary.note}</p>
-          <p style="margin-top:8px;font-size:10px;color:#8B949E;letter-spacing:0.04em;">Universo: ${summary.reviewed.toLocaleString('es-CL')}</p>
+          <p style="font-size:11px;color:#64748B;line-height:1.5;">${summary.note}</p>
+          <p style="margin-top:8px;font-size:10px;color:#94A3B8;letter-spacing:0.04em;">Universo: ${summary.reviewed.toLocaleString('es-CL')}</p>
         </div>
       `).join('');
     }
@@ -1561,22 +1584,22 @@
         refs.resultsBody.innerHTML = findings.map((item, idx) => {
           const prevRule = idx > 0 ? findings[idx-1].ruleTitle : null;
           const showRule = item.ruleTitle !== prevRule;
-          const borderTop = showRule && idx > 0 ? 'border-top:2px solid #30363D;' : 'border-top:1px solid #21262D;';
+          const borderTop = showRule && idx > 0 ? 'border-top:2px solid #E2E8F0;' : 'border-top:1px solid #F1F5F9;';
           const sevClass = item.severity === 'alta' ? 'badge-alta' : item.severity === 'media' ? 'badge-media' : 'badge-baja';
-          const rowBg = item.severity === 'alta' ? 'rgba(248,81,73,0.04)' : item.severity === 'media' ? 'rgba(210,153,34,0.04)' : 'transparent';
+          const rowBg = item.severity === 'alta' ? '#FFF5F5' : item.severity === 'media' ? '#FFFBEB' : '#FFFFFF';
           return `
           <tr style="background:${rowBg};${borderTop}">
             <td style="padding:8px 12px;white-space:nowrap;">
               <span class="pill ${sevClass}">${severityLabel(item.severity)}</span>
             </td>
-            <td style="padding:8px 12px;font-size:11px;font-weight:600;color:#8B949E;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${item.ruleTitle}">${showRule ? item.ruleTitle : ''}</td>
-            <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#C9D1D9;white-space:nowrap;">${item.rut}</td>
-            <td style="padding:8px 12px;font-size:12px;font-weight:500;color:#F0F6FC;white-space:nowrap;">${item.name}</td>
-            <td style="padding:8px 12px;font-size:11px;color:#8B949E;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.company}">${item.company}</td>
-            <td style="padding:8px 12px;font-size:11px;color:#C9D1D9;line-height:1.4;min-width:220px;">${item.detail}</td>
-            <td style="padding:8px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#C9D1D9;text-align:right;white-space:nowrap;">${item.bookValue || '—'}</td>
-            <td style="padding:8px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#C9D1D9;text-align:right;white-space:nowrap;">${item.externalValue || '—'}</td>
-            <td style="padding:8px 12px;font-size:11px;color:#8B949E;min-width:160px;">${item.reference || '—'}</td>
+            <td style="padding:8px 12px;font-size:11px;font-weight:600;color:#94A3B8;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${item.ruleTitle}">${showRule ? item.ruleTitle : ''}</td>
+            <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;white-space:nowrap;">${item.rut}</td>
+            <td style="padding:8px 12px;font-size:12px;font-weight:500;color:#0F172A;white-space:nowrap;">${item.name}</td>
+            <td style="padding:8px 12px;font-size:11px;color:#64748B;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.company}">${item.company}</td>
+            <td style="padding:8px 12px;font-size:11px;color:#374151;line-height:1.4;min-width:220px;">${item.detail}</td>
+            <td style="padding:8px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#374151;text-align:right;white-space:nowrap;">${item.bookValue || '—'}</td>
+            <td style="padding:8px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#374151;text-align:right;white-space:nowrap;">${item.externalValue || '—'}</td>
+            <td style="padding:8px 12px;font-size:11px;color:#64748B;min-width:160px;">${item.reference || '—'}</td>
           </tr>`;
         }).join('');
       }
