@@ -3,22 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AUDITATOR | Modulo Caja de Compensacion</title>
+  <title>AUDITATOR | Reglas de Nomina</title>
   <script>
     tailwind = {
       config: {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif']
+              sans: ['Manrope', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif']
             },
             colors: {
-              auditCyan: '#1BB4D8',
-              auditDark: '#0F172A',
-              auditBg: '#EDF2F7'
+              auditInk: '#0B1324',
+              auditBlue: '#0F4C81',
+              auditSky: '#39A9DB',
+              auditMint: '#D7F3E3',
+              auditSand: '#F7F1E8',
+              auditRose: '#FDECEC'
             },
             boxShadow: {
-              soft: '0 12px 34px rgba(15, 23, 42, 0.08)'
+              glow: '0 24px 80px rgba(11, 19, 36, 0.12)'
             }
           }
         }
@@ -27,18 +31,21 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Manrope', sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(27, 180, 216, 0.12), transparent 28%),
-        linear-gradient(180deg, #f8fbfd 0%, #edf2f7 42%, #e6edf5 100%);
+        radial-gradient(circle at top left, rgba(57, 169, 219, 0.22), transparent 28%),
+        radial-gradient(circle at right 10%, rgba(15, 76, 129, 0.14), transparent 22%),
+        linear-gradient(180deg, #f8fafc 0%, #eef4f9 42%, #e7eef6 100%);
     }
 
     .dropzone-active {
-      border-color: #1BB4D8 !important;
-      background: rgba(27, 180, 216, 0.08) !important;
+      border-color: #39A9DB !important;
+      background: rgba(57, 169, 219, 0.12) !important;
     }
 
     .dropzone-error {
@@ -46,221 +53,244 @@
       background: rgba(220, 38, 38, 0.06) !important;
     }
 
-    .table-scroll::-webkit-scrollbar {
+    .results-scroll::-webkit-scrollbar {
       height: 10px;
       width: 10px;
     }
 
-    .table-scroll::-webkit-scrollbar-thumb {
-      background: rgba(15, 23, 42, 0.18);
+    .results-scroll::-webkit-scrollbar-thumb {
+      background: rgba(11, 19, 36, 0.18);
       border-radius: 999px;
     }
   </style>
 </head>
 <body class="min-h-screen text-slate-900">
   <div class="min-h-screen">
-    <header class="border-b border-slate-800 bg-auditDark text-white shadow-soft">
-      <div class="mx-auto flex min-h-[88px] w-full max-w-[1440px] items-center justify-between px-6 py-5 lg:px-10">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-lg font-bold text-cyan-300">
+    <header class="border-b border-white/10 bg-auditInk text-white shadow-glow">
+      <div class="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-6 py-7 lg:px-10 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex items-start gap-4">
+          <div class="flex h-14 w-14 items-center justify-center rounded-3xl border border-white/10 bg-white/10 font-display text-xl font-bold text-cyan-200">
             AU
           </div>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-cyan-300">Nominas NPR</p>
-            <h1 class="text-2xl font-semibold tracking-tight">AUDITATOR</h1>
-            <p class="text-sm text-slate-300">Modulo: Caja de Compensacion</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-cyan-200">Nominas NPR</p>
+            <h1 class="font-display text-3xl font-bold tracking-tight">AUDITATOR</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              Auditorias transversales por grupo, ejecutadas localmente en tu navegador y pensadas para revisar
+              libro acumulado, maestro, nominas sindicales y prestamos Fonasa.
+            </p>
           </div>
         </div>
-        <div class="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 xl:block">
-          Auditoria local en browser, sin backend
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-3xl border border-white/10 bg-white/5 px-5 py-4">
+            <p class="text-[11px] uppercase tracking-[0.28em] text-slate-400">Estado</p>
+            <p id="status-pill" class="mt-2 text-sm font-semibold text-white">Configurando auditoria</p>
+          </div>
+          <div class="rounded-3xl border border-white/10 bg-white/5 px-5 py-4">
+            <p class="text-[11px] uppercase tracking-[0.28em] text-slate-400">Cobertura actual</p>
+            <p class="mt-2 text-sm font-semibold text-white">Grupo Crux habilitado</p>
+          </div>
         </div>
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-[1440px] px-6 py-8 lg:px-10">
-      <section class="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-soft backdrop-blur">
-        <div class="mb-6 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Configuracion</p>
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Cruce de Caja de Compensacion</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Carga los cuatro archivos fuente, filtra por empresa y ejecuta la auditoria para comparar montos
-              de credito y ahorro entre Caja, Rex y Maestro Basico.
+    <main class="mx-auto w-full max-w-[1480px] px-6 py-8 lg:px-10">
+      <section class="overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-glow backdrop-blur">
+        <div class="grid gap-0 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <aside class="border-b border-slate-200/80 bg-slate-50/90 p-6 xl:border-b-0 xl:border-r">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Paso 1</p>
+            <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-auditInk">Selecciona el grupo</h2>
+            <p class="mt-3 text-sm leading-6 text-slate-600">
+              Esta primera version deja operativo Grupo Crux y deja preparados los otros grupos para la siguiente etapa.
             </p>
-          </div>
-          <div class="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-slate-700">
-            Estado actual:
-            <span id="status-pill" class="font-semibold text-slate-900">Esperando archivos</span>
-          </div>
-        </div>
 
-        <div class="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <label for="empresa-select" class="mb-3 block text-sm font-semibold text-slate-700">Empresa</label>
+            <label for="group-select" class="mt-6 block text-sm font-semibold text-slate-700">Grupo de empresas</label>
             <select
-              id="empresa-select"
-              class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm outline-none transition focus:border-auditCyan focus:ring-4 focus:ring-cyan-100"
-            >
-              <option value="" selected disabled>-- Carga el Detalle Rex primero --</option>
-            </select>
-            <p class="mt-3 text-xs leading-5 text-slate-500">
-              Al cambiar de empresa se limpia la carga actual para evitar cruces inconsistentes.
-            </p>
+              id="group-select"
+              class="mt-3 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-auditSky focus:ring-4 focus:ring-sky-100"
+            ></select>
+
+            <div id="group-card" class="mt-6 rounded-[28px] bg-auditInk px-5 py-5 text-white">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-cyan-200">Empresas consideradas</p>
+              <div id="group-company-list" class="mt-4 flex flex-wrap gap-2"></div>
+              <p id="group-note" class="mt-4 text-sm leading-6 text-slate-300"></p>
+            </div>
+
+            <div class="mt-6 rounded-[28px] border border-slate-200 bg-white px-5 py-5">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-slate-500">Reglas fase 1</p>
+              <ul id="rule-list" class="mt-4 space-y-3 text-sm leading-6 text-slate-700"></ul>
+            </div>
+          </aside>
+
+          <div class="p-6 lg:p-8">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Paso 2</p>
+                <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-auditInk">Carga los insumos</h2>
+                <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                  La auditoria toma el libro acumulado como base principal, cruza renovaciones con Maestro Basico,
+                  valida sindicatos contra la nomina y concilia Fonasa con OCR local para imagenes y PDF.
+                </p>
+              </div>
+              <div class="rounded-3xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-slate-700">
+                Mes detectado:
+                <span id="audit-month-pill" class="font-semibold text-slate-900">Aun no disponible</span>
+              </div>
+            </div>
+
+            <div class="mt-8 grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
+              <div
+                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
+                data-file-key="detalle"
+              >
+                <input id="file-detalle" type="file" accept=".xlsx" class="sr-only">
+                <div class="pointer-events-none">
+                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">📘</div>
+                  <p class="mt-5 text-base font-semibold text-slate-900">Detalle proceso</p>
+                  <p class="mt-2 text-sm text-slate-500">Libro acumulado .xlsx</p>
+                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Arrastra o haz clic</p>
+                </div>
+                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+              </div>
+
+              <div
+                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
+                data-file-key="maestro"
+              >
+                <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
+                <div class="pointer-events-none">
+                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🧾</div>
+                  <p class="mt-5 text-base font-semibold text-slate-900">Maestro Basico</p>
+                  <p class="mt-2 text-sm text-slate-500">Contratos, causales y renovaciones</p>
+                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Solo .xlsx</p>
+                </div>
+                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+              </div>
+
+              <div
+                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
+                data-file-key="sindicato"
+              >
+                <input id="file-sindicato" type="file" accept=".xlsx" class="sr-only">
+                <div class="pointer-events-none">
+                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🤝</div>
+                  <p class="mt-5 text-base font-semibold text-slate-900">Nomina sindical</p>
+                  <p class="mt-2 text-sm text-slate-500">CUOTAS + CORRECIONES dentro del mismo archivo</p>
+                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Solo .xlsx</p>
+                </div>
+                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+              </div>
+
+              <div
+                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
+                data-file-key="fonasa"
+              >
+                <input id="file-fonasa" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple class="sr-only">
+                <div class="pointer-events-none">
+                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🏥</div>
+                  <p class="mt-5 text-base font-semibold text-slate-900">Prestamos Fonasa</p>
+                  <p class="mt-2 text-sm text-slate-500">Imagenes o PDF. Se leen con OCR local.</p>
+                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Multiples archivos</p>
+                </div>
+                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
+                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
+              </div>
+            </div>
+
+            <div class="mt-8 flex flex-col items-center gap-4">
+              <button
+                id="run-audit-btn"
+                class="inline-flex min-w-[280px] items-center justify-center gap-3 rounded-full bg-slate-300 px-8 py-4 text-base font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 enabled:bg-auditBlue enabled:hover:bg-sky-700"
+                disabled
+              >
+                <span id="run-icon">▶</span>
+                <span id="run-label">Ejecutar auditoria Grupo Crux</span>
+              </button>
+              <p id="run-help" class="text-sm text-slate-500">Carga los 4 insumos para habilitar la ejecucion.</p>
+            </div>
           </div>
-
-          <div class="grid gap-5 md:grid-cols-2">
-            <div
-              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
-              data-file-key="credito"
-            >
-              <input id="file-credito" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
-                <p class="mt-5 text-base font-semibold text-slate-900">📄 Retencion Credito (Caja)</p>
-                <p class="mt-2 text-sm text-slate-500">Archivo Retenciones_credito_YYYYMM_EMPRESA.xlsx</p>
-                <div class="mt-5">
-                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
-                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
-                </div>
-              </div>
-              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-            </div>
-
-            <div
-              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
-              data-file-key="ahorro"
-            >
-              <input id="file-ahorro" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
-                <p class="mt-5 text-base font-semibold text-slate-900">📄 Retencion Ahorro (Caja)</p>
-                <p class="mt-2 text-sm text-slate-500">Archivo Retenciones_ahorro_YYYYMM_EMPRESA.xlsx</p>
-                <div class="mt-5">
-                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
-                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
-                </div>
-              </div>
-              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-            </div>
-
-            <div
-              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
-              data-file-key="rex"
-            >
-              <input id="file-rex" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
-                <p class="mt-5 text-base font-semibold text-slate-900">📊 Detalle Rex</p>
-                <p class="mt-2 text-sm text-slate-500">Archivo Detalle_proceso_*.xlsx</p>
-                <div class="mt-5">
-                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
-                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
-                </div>
-              </div>
-              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-            </div>
-
-            <div
-              class="dropzone group relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditCyan hover:bg-cyan-50/50"
-              data-file-key="maestro"
-            >
-              <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">☁️</div>
-                <p class="mt-5 text-base font-semibold text-slate-900">👥 Maestro Basico</p>
-                <p class="mt-2 text-sm text-slate-500">Archivo Maestro_Basico_*.xlsx</p>
-                <div class="mt-5">
-                  <p class="text-sm font-medium text-slate-600">Arrastra aqui o haz clic</p>
-                  <p class="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">Solo archivos .xlsx</p>
-                </div>
-              </div>
-              <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-              <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-8 flex flex-col items-center gap-4">
-          <button
-            id="run-audit-btn"
-            class="inline-flex min-w-[240px] items-center justify-center gap-3 rounded-full bg-slate-300 px-8 py-4 text-base font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 enabled:bg-auditCyan enabled:hover:bg-cyan-600"
-            disabled
-          >
-            <span id="run-icon">▶</span>
-            <span id="run-label">Ejecutar Auditoria</span>
-          </button>
-          <p id="run-help" class="text-sm text-slate-500">Debes seleccionar empresa y cargar los 4 archivos requeridos.</p>
         </div>
       </section>
 
-      <section id="feedback-banner" class="mt-6 hidden rounded-2xl border px-5 py-4 text-sm font-medium"></section>
+      <section id="feedback-banner" class="mt-6 hidden rounded-3xl border px-5 py-4 text-sm font-medium"></section>
 
       <section id="results-section" class="mt-8 hidden space-y-8">
         <div class="grid gap-5 xl:grid-cols-4">
-          <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Total</p>
-            <p id="summary-total" class="mt-4 text-4xl font-semibold tracking-tight text-slate-900">0</p>
-            <p class="mt-3 text-sm text-slate-500">Registros considerados en la auditoria</p>
+          <article class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-glow">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Hallazgos</p>
+            <p id="summary-findings" class="mt-4 text-4xl font-bold tracking-tight text-auditInk">0</p>
+            <p class="mt-3 text-sm text-slate-500">Observaciones detectadas en las reglas activas</p>
           </article>
-          <article class="rounded-3xl border border-emerald-200 bg-white p-6 shadow-soft">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">✅ Cuadran</p>
-            <p id="summary-ok" class="mt-4 text-4xl font-semibold tracking-tight text-emerald-600">0</p>
-            <p id="summary-ok-pct" class="mt-3 text-sm text-slate-500">0% del total</p>
+          <article class="rounded-[30px] border border-amber-200 bg-white p-6 shadow-glow">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">Reglas con alerta</p>
+            <p id="summary-rules-alert" class="mt-4 text-4xl font-bold tracking-tight text-amber-700">0</p>
+            <p class="mt-3 text-sm text-slate-500">De un total de 7 reglas revisadas</p>
           </article>
-          <article class="rounded-3xl border border-amber-200 bg-white p-6 shadow-soft">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-600">⚠️ Diferencia</p>
-            <p id="summary-diff" class="mt-4 text-4xl font-semibold tracking-tight text-amber-600">0</p>
-            <p id="summary-diff-pct" class="mt-3 text-sm text-slate-500">0% del total</p>
+          <article class="rounded-[30px] border border-emerald-200 bg-white p-6 shadow-glow">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-700">Empresas revisadas</p>
+            <p id="summary-companies" class="mt-4 text-4xl font-bold tracking-tight text-emerald-700">0</p>
+            <p id="summary-companies-note" class="mt-3 text-sm text-slate-500">0 empresas con movimientos en el periodo</p>
           </article>
-          <article class="rounded-3xl border border-red-200 bg-white p-6 shadow-soft">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-red-600">❌ Error</p>
-            <p id="summary-error" class="mt-4 text-4xl font-semibold tracking-tight text-red-600">0</p>
-            <p id="summary-error-pct" class="mt-3 text-sm text-slate-500">0% del total</p>
+          <article class="rounded-[30px] border border-sky-200 bg-white p-6 shadow-glow">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Documentos Fonasa</p>
+            <p id="summary-fonasa-docs" class="mt-4 text-4xl font-bold tracking-tight text-sky-700">0</p>
+            <p id="summary-fonasa-note" class="mt-3 text-sm text-slate-500">Archivos leidos para la conciliacion</p>
           </article>
         </div>
 
-        <div class="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-soft">
+        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-glow">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Resumen por regla</p>
+              <h3 class="mt-2 font-display text-2xl font-bold tracking-tight text-auditInk">Panel ejecutivo</h3>
+            </div>
+            <div class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
+              Periodo auditado:
+              <span id="audit-month-results" class="font-semibold text-slate-900">No detectado</span>
+            </div>
+          </div>
+          <div id="rule-summary-grid" class="mt-6 grid gap-4 xl:grid-cols-2"></div>
+        </section>
+
+        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-glow">
           <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Resultados</p>
-              <h3 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Tabla de auditoria</h3>
+              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Detalle</p>
+              <h3 class="mt-2 font-display text-2xl font-bold tracking-tight text-auditInk">Hallazgos auditables</h3>
             </div>
-            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <div class="flex flex-wrap gap-2">
-                <button class="filter-btn rounded-full border border-slate-200 bg-auditCyan px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600" data-filter="all">Todos</button>
-                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600" data-filter="✅">✅ OK</button>
-                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600" data-filter="⚠️">⚠️ Diferencia</button>
-                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600" data-filter="❌">❌ Error</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-auditBlue px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700" data-filter="all">Todos</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700" data-filter="alta">Alta</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700" data-filter="media">Media</button>
+                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700" data-filter="baja">Baja</button>
               </div>
               <button
                 id="export-btn"
-                class="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-600"
-                style="background-color:#1BB4D8"
+                class="inline-flex items-center justify-center gap-2 rounded-full bg-auditBlue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
               >
                 ⬇ Descargar Excel
               </button>
             </div>
           </div>
 
-          <div class="mt-5 rounded-3xl border border-slate-200">
-            <div class="table-scroll overflow-x-auto">
-              <table class="min-w-[1440px] divide-y divide-slate-200">
-                <thead class="text-left text-xs uppercase tracking-[0.22em] text-white" style="background-color:#0F172A">
+          <div class="mt-5 rounded-[28px] border border-slate-200">
+            <div class="results-scroll overflow-x-auto">
+              <table class="min-w-[1480px] divide-y divide-slate-200">
+                <thead class="bg-auditInk text-left text-xs uppercase tracking-[0.22em] text-white">
                   <tr>
-                    <th class="px-4 py-4 font-semibold">Estado</th>
+                    <th class="px-4 py-4 font-semibold">Severidad</th>
+                    <th class="px-4 py-4 font-semibold">Regla</th>
                     <th class="px-4 py-4 font-semibold">RUT</th>
                     <th class="px-4 py-4 font-semibold">Nombre</th>
                     <th class="px-4 py-4 font-semibold">Empresa</th>
-                    <th class="px-4 py-4 font-semibold">Sede</th>
-                    <th class="px-4 py-4 font-semibold">Estado Empleado</th>
-                    <th class="px-4 py-4 font-semibold">Caja Credito $</th>
-                    <th class="px-4 py-4 font-semibold">Rex Credito $</th>
-                    <th class="px-4 py-4 font-semibold">Caja Ahorro $</th>
-                    <th class="px-4 py-4 font-semibold">Rex Ahorro $</th>
-                    <th class="px-4 py-4 font-semibold">Motivo</th>
+                    <th class="px-4 py-4 font-semibold">Detalle</th>
+                    <th class="px-4 py-4 font-semibold">Libro</th>
+                    <th class="px-4 py-4 font-semibold">Externo</th>
+                    <th class="px-4 py-4 font-semibold">Referencia</th>
                   </tr>
                 </thead>
                 <tbody id="results-body" class="divide-y divide-slate-200 bg-white"></tbody>
@@ -268,77 +298,189 @@
             </div>
           </div>
 
-        <p id="results-count" class="mt-4 text-sm text-slate-500"></p>
-        </div>
+          <p id="results-count" class="mt-4 text-sm text-slate-500"></p>
+        </section>
       </section>
     </main>
   </div>
 
   <script>
-    // Empresas detectadas dinámicamente desde el Detalle Rex
-    let EMPRESAS_REX = []; // [{ label, value }] donde value es el nombre exacto lowercase
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-    const FILE_KEYS = ['credito', 'ahorro', 'rex', 'maestro'];
-    const FILE_LABELS = {
-      credito: 'Retencion Credito',
-      ahorro: 'Retencion Ahorro',
-      rex: 'Detalle Rex',
-      maestro: 'Maestro Basico'
+    const GROUPS = {
+      crux: {
+        label: 'Grupo Crux',
+        enabled: true,
+        note: 'Incluye FBO, Kaipoki, Progreso y considera Pakarati + Alianza como historicos del grupo.',
+        companies: [
+          'FOOD BEVERAGE ORGANIZATION SPA',
+          'KAIPOKI SPA',
+          'COMERCIAL PROGRESO SPA',
+          'CLAUDIA LORENA PAKARATI GONZALEZ',
+          'SERVICIOS DE ALIMENTACION ALIANZA S.A.',
+          'SERVICIOS DE ALIMENTACION S.A.'
+        ],
+        fonasaAliases: {
+          'FOOD BEVERAGE ORGANIZATION SPA': ['FBO', 'FOOD BEVERAGE ORGANIZATION', 'FOOD BEVERAGE'],
+          'KAIPOKI SPA': ['KAIPOKI'],
+          'COMERCIAL PROGRESO SPA': ['COMERCIAL PROGRESO', 'PROGRESO']
+        }
+      },
+      avanza: {
+        label: 'Grupo Avanza',
+        enabled: false,
+        note: 'Reservado para la siguiente etapa.',
+        companies: []
+      },
+      avesa: {
+        label: 'Grupo Avesa',
+        enabled: false,
+        note: 'Reservado para la siguiente etapa.',
+        companies: []
+      },
+      sscspace: {
+        label: 'SSCSpACE',
+        enabled: false,
+        note: 'Reservado para la siguiente etapa.',
+        companies: []
+      }
+    };
+
+    const RULE_DEFINITIONS = [
+      { id: 'dias-liquido', title: '0 dias trabajados con sueldo liquido', detail: 'Detecta personas con 0 dias trabajados y sueldo liquido distinto de cero.' },
+      { id: 'movilizacion-sindical', title: 'Manipuladoras sindicalizadas sin aporte movilizacion', detail: 'Toda manipuladora con sindicato debe tener Aporte Sindical Movilizacion distinto de cero.' },
+      { id: 'sobregiro', title: 'Compensacion Sobregiro distinta de cero', detail: 'Nadie debiera registrar Compensacion Sobregiro.' },
+      { id: 'caja-25', title: 'Descuentos caja sobre el 25% del imponible', detail: 'Suma Credito + Vida + Ahorro + Aporte CCAF no debe superar el 25% del imponible.' },
+      { id: 'sindicatos', title: 'Libro vs nomina sindical', detail: 'Compara mismo RUT + mismo sindicato, considerando la hoja de correcciones.' },
+      { id: 'renovaciones', title: 'Renovaciones de plazo fijo', detail: 'Contrato plazo fijo con termino en el mes, sin causal y sin renovacion visible, se marca para revision.' },
+      { id: 'fonasa', title: 'Prestamos Fonasa informados vs descontados', detail: 'Conciliacion automatica con OCR local sobre imagenes y PDF.' }
+    ];
+
+    const FILE_CONFIG = {
+      detalle: {
+        label: 'Detalle proceso',
+        multiple: false,
+        accept: /\.(xlsx)$/i,
+        error: 'Solo se aceptan archivos .xlsx'
+      },
+      maestro: {
+        label: 'Maestro Basico',
+        multiple: false,
+        accept: /\.(xlsx)$/i,
+        error: 'Solo se aceptan archivos .xlsx'
+      },
+      sindicato: {
+        label: 'Nomina sindical',
+        multiple: false,
+        accept: /\.(xlsx)$/i,
+        error: 'Solo se aceptan archivos .xlsx'
+      },
+      fonasa: {
+        label: 'Prestamos Fonasa',
+        multiple: true,
+        accept: /\.(pdf|jpg|jpeg|png)$/i,
+        error: 'Solo se aceptan PDF, JPG, JPEG o PNG'
+      }
     };
 
     const state = {
-      empresa: '',
+      group: 'crux',
       files: {
-        credito: null,
-        ahorro: null,
-        rex: null,
-        maestro: null
+        detalle: null,
+        maestro: null,
+        sindicato: null,
+        fonasa: []
       },
-      resultados: [],
-      filtroActual: 'all',
-      ejecutando: false
+      findings: [],
+      summaries: [],
+      filter: 'all',
+      executing: false,
+      processingLabel: '',
+      auditMonth: null,
+      companyCount: 0,
+      fonasaDocuments: 0
     };
 
     const refs = {
-      empresaSelect: document.getElementById('empresa-select'),
+      groupSelect: document.getElementById('group-select'),
+      groupCompanyList: document.getElementById('group-company-list'),
+      groupNote: document.getElementById('group-note'),
+      ruleList: document.getElementById('rule-list'),
       runButton: document.getElementById('run-audit-btn'),
-      runLabel: document.getElementById('run-label'),
       runIcon: document.getElementById('run-icon'),
+      runLabel: document.getElementById('run-label'),
       runHelp: document.getElementById('run-help'),
       statusPill: document.getElementById('status-pill'),
+      auditMonthPill: document.getElementById('audit-month-pill'),
+      auditMonthResults: document.getElementById('audit-month-results'),
       feedbackBanner: document.getElementById('feedback-banner'),
       resultsSection: document.getElementById('results-section'),
       resultsBody: document.getElementById('results-body'),
       resultsCount: document.getElementById('results-count'),
       exportBtn: document.getElementById('export-btn'),
-      summaryTotal: document.getElementById('summary-total'),
-      summaryOk: document.getElementById('summary-ok'),
-      summaryOkPct: document.getElementById('summary-ok-pct'),
-      summaryDiff: document.getElementById('summary-diff'),
-      summaryDiffPct: document.getElementById('summary-diff-pct'),
-      summaryError: document.getElementById('summary-error'),
-      summaryErrorPct: document.getElementById('summary-error-pct')
+      summaryFindings: document.getElementById('summary-findings'),
+      summaryRulesAlert: document.getElementById('summary-rules-alert'),
+      summaryCompanies: document.getElementById('summary-companies'),
+      summaryCompaniesNote: document.getElementById('summary-companies-note'),
+      summaryFonasaDocs: document.getElementById('summary-fonasa-docs'),
+      summaryFonasaNote: document.getElementById('summary-fonasa-note'),
+      ruleSummaryGrid: document.getElementById('rule-summary-grid')
     };
 
-    function normalizarRut(rut) {
-      if (!rut && rut !== 0) return '';
-      return String(rut)
-        .replace(/\./g, '')
-        .replace(/\s/g, '')
+    function normalizeText(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toUpperCase()
+        .replace(/\s+/g, ' ')
         .trim();
     }
 
-    function parsearMonto(valor) {
-      if (!valor && valor !== 0) return 0;
-      const str = String(valor).replace(/\./g, '').replace(',', '.');
-      const num = parseFloat(str);
-      return Number.isNaN(num) ? 0 : num;
+    function normalizeKey(value) {
+      return normalizeText(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
     }
 
-    function formatMonto(valor) {
-      if (!valor || valor === 0) return '$0';
-      return '$' + Math.round(valor).toLocaleString('es-CL');
+    function normalizeRut(value) {
+      const raw = String(value || '')
+        .toUpperCase()
+        .replace(/\./g, '')
+        .replace(/\s+/g, '')
+        .trim();
+
+      if (!raw) return '';
+      const cleaned = raw.replace(/[^0-9K-]/g, '');
+      if (cleaned.includes('-')) return cleaned;
+
+      if (cleaned.length > 1) {
+        return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
+      }
+
+      return cleaned;
+    }
+
+    function parseAmount(value) {
+      if (value === null || value === undefined || value === '') return 0;
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+
+      const text = String(value).trim();
+      if (!text) return 0;
+
+      const sanitized = text
+        .replace(/\$/g, '')
+        .replace(/\s+/g, '')
+        .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+        .replace(/,/g, '.');
+
+      const parsed = Number.parseFloat(sanitized);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function formatAmount(value) {
+      if (!value) return '$0';
+      return '$' + Math.round(value).toLocaleString('es-CL');
     }
 
     function formatBytes(bytes) {
@@ -346,24 +488,108 @@
       return `${(bytes / 1024).toFixed(1)} KB`;
     }
 
-    function normalizarTexto(valor) {
-      return String(valor || '').toLowerCase().trim();
+    function parseExcelDate(value) {
+      if (value === null || value === undefined || value === '') return null;
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+
+      if (typeof value === 'number') {
+        const date = new Date(Math.round((value - 25569) * 86400 * 1000));
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      const text = String(value).trim();
+      if (!text) return null;
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        const date = new Date(`${text}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      const match = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+      if (match) {
+        const day = match[1].padStart(2, '0');
+        const month = match[2].padStart(2, '0');
+        const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+        const date = new Date(`${year}-${month}-${day}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      if (/^\d+(\.0+)?$/.test(text)) {
+        return parseExcelDate(Number.parseFloat(text));
+      }
+
+      return null;
     }
 
-    function mostrarBanner(tipo, mensaje) {
-      refs.feedbackBanner.className = 'mt-6 rounded-2xl border px-5 py-4 text-sm font-medium';
-      if (tipo === 'error') {
+    function sameMonth(date, auditMonth) {
+      if (!date || !auditMonth) return false;
+      return date.getFullYear() === auditMonth.year && date.getMonth() + 1 === auditMonth.month;
+    }
+
+    function monthLabel(auditMonth) {
+      if (!auditMonth) return 'No detectado';
+      return new Intl.DateTimeFormat('es-CL', {
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(auditMonth.year, auditMonth.month - 1, 1));
+    }
+
+    function buildAuditMonth(processValue) {
+      const match = String(processValue || '').trim().match(/^(\d{4})-(\d{2})$/);
+      if (!match) return null;
+      return {
+        year: Number(match[1]),
+        month: Number(match[2])
+      };
+    }
+
+    function isMeaningfulSyndicate(value) {
+      const text = normalizeKey(value);
+      return Boolean(text) && !['nosindicato', 'no sindicalizado', 'sin sindicato', ' '].includes(text);
+    }
+
+    function hasMeaningfulCausal(causal, causalName) {
+      const combined = `${normalizeKey(causal)} ${normalizeKey(causalName)}`.trim();
+      if (!combined) return false;
+      return !combined.includes('sin definir') &&
+        !combined.includes('sindefinir') &&
+        !combined.includes('sindefinir') &&
+        !combined.includes('vigente') &&
+        !combined.includes('no aplica');
+    }
+
+    function severityLabel(level) {
+      if (level === 'alta') return 'Alta';
+      if (level === 'media') return 'Media';
+      return 'Baja';
+    }
+
+    function severityClasses(level) {
+      if (level === 'alta') return 'bg-red-50 text-red-700 border-red-200';
+      if (level === 'media') return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-sky-50 text-sky-700 border-sky-200';
+    }
+
+    function rowClasses(level) {
+      if (level === 'alta') return 'bg-red-50/55';
+      if (level === 'media') return 'bg-amber-50/55';
+      return 'bg-sky-50/50';
+    }
+
+    function showBanner(type, message) {
+      refs.feedbackBanner.className = 'mt-6 rounded-3xl border px-5 py-4 text-sm font-medium';
+      if (type === 'error') {
         refs.feedbackBanner.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
-      } else if (tipo === 'success') {
+      } else if (type === 'success') {
         refs.feedbackBanner.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
       } else {
-        refs.feedbackBanner.classList.add('border-cyan-200', 'bg-cyan-50', 'text-cyan-700');
+        refs.feedbackBanner.classList.add('border-sky-200', 'bg-sky-50', 'text-sky-700');
       }
-      refs.feedbackBanner.textContent = mensaje;
+      refs.feedbackBanner.textContent = message;
       refs.feedbackBanner.classList.remove('hidden');
     }
 
-    function ocultarBanner() {
+    function hideBanner() {
       refs.feedbackBanner.classList.add('hidden');
       refs.feedbackBanner.textContent = '';
     }
@@ -380,29 +606,53 @@
 
     function setDropzoneState(key) {
       const { zone, meta, error } = getDropzoneElements(key);
-      const file = state.files[key];
+      const entry = state.files[key];
+      const config = FILE_CONFIG[key];
 
       zone.classList.remove('dropzone-error');
       meta.classList.add('hidden');
       error.classList.add('hidden');
       error.textContent = '';
 
-      if (file && file.error) {
+      if (entry && entry.error) {
         zone.classList.add('dropzone-error');
-        error.textContent = file.error;
+        error.textContent = entry.error;
         error.classList.remove('hidden');
         return;
       }
 
-      if (file && file.file) {
+      if (config.multiple) {
+        if (!Array.isArray(entry) || !entry.length) return;
+        const size = entry.reduce((acc, file) => acc + file.size, 0);
+        const names = entry.slice(0, 3).map((file) => `<li class="truncate">${file.name}</li>`).join('');
+        const extra = entry.length > 3 ? `<p class="mt-2 text-xs text-slate-500">+${entry.length - 3} archivos adicionales</p>` : '';
+
         meta.innerHTML = `
           <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-semibold text-emerald-700">✅ ${FILE_LABELS[key]} cargado</p>
-              <p class="mt-1 break-all text-sm text-slate-700">${file.file.name}</p>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-emerald-700">✅ ${config.label} cargados</p>
+              <ul class="mt-2 space-y-1 text-sm text-slate-700">${names}</ul>
+              ${extra}
             </div>
             <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-              ${formatBytes(file.file.size)}
+              ${entry.length} docs
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-slate-500">Peso total: ${formatBytes(size)}</p>
+        `;
+        meta.classList.remove('hidden');
+        return;
+      }
+
+      if (entry && entry.file) {
+        meta.innerHTML = `
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-emerald-700">✅ ${config.label} cargado</p>
+              <p class="mt-1 break-all text-sm text-slate-700">${entry.file.name}</p>
+            </div>
+            <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+              ${formatBytes(entry.file.size)}
             </div>
           </div>
         `;
@@ -410,96 +660,119 @@
       }
     }
 
-    function resetFilesAndResults() {
-      FILE_KEYS.forEach((key) => {
-        state.files[key] = null;
-        const { input } = getDropzoneElements(key);
-        input.value = '';
-        setDropzoneState(key);
+    function currentGroupConfig() {
+      return GROUPS[state.group];
+    }
+
+    function groupCompanySet() {
+      return new Set(currentGroupConfig().companies.map(normalizeText));
+    }
+
+    function populateGroupSelect() {
+      refs.groupSelect.innerHTML = '';
+      Object.entries(GROUPS).forEach(([key, group]) => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = group.enabled ? group.label : `${group.label} (proximamente)`;
+        option.disabled = !group.enabled;
+        option.selected = key === state.group;
+        refs.groupSelect.appendChild(option);
       });
-      state.resultados = [];
-      state.filtroActual = 'all';
+    }
+
+    function renderGroupPanel() {
+      const group = currentGroupConfig();
+      refs.groupCompanyList.innerHTML = group.companies.map((company) => `
+        <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">${company}</span>
+      `).join('');
+      refs.groupNote.textContent = group.note;
+
+      refs.ruleList.innerHTML = RULE_DEFINITIONS.map((rule, index) => `
+        <li class="rounded-2xl bg-slate-50 px-4 py-3">
+          <p class="font-semibold text-slate-800">${index + 1}. ${rule.title}</p>
+          <p class="mt-1 text-sm text-slate-500">${rule.detail}</p>
+        </li>
+      `).join('');
+    }
+
+    function resetResults() {
+      state.findings = [];
+      state.summaries = [];
+      state.auditMonth = null;
+      state.companyCount = 0;
+      state.fonasaDocuments = 0;
       refs.resultsSection.classList.add('hidden');
       refs.resultsBody.innerHTML = '';
       refs.resultsCount.textContent = '';
-      refs.summaryTotal.textContent = '0';
-      refs.summaryOk.textContent = '0';
-      refs.summaryDiff.textContent = '0';
-      refs.summaryError.textContent = '0';
-      refs.summaryOkPct.textContent = '0% del total';
-      refs.summaryDiffPct.textContent = '0% del total';
-      refs.summaryErrorPct.textContent = '0% del total';
-      setFilterButtonState();
-      ocultarBanner();
-      updateRunState();
+      refs.ruleSummaryGrid.innerHTML = '';
+      refs.summaryFindings.textContent = '0';
+      refs.summaryRulesAlert.textContent = '0';
+      refs.summaryCompanies.textContent = '0';
+      refs.summaryCompaniesNote.textContent = '0 empresas con movimientos en el periodo';
+      refs.summaryFonasaDocs.textContent = '0';
+      refs.summaryFonasaNote.textContent = 'Archivos leidos para la conciliacion';
+      refs.auditMonthPill.textContent = 'Aun no disponible';
+      refs.auditMonthResults.textContent = 'No detectado';
+      setFilterButtons();
     }
 
     function updateRunState() {
-      const filesReady = FILE_KEYS.every((key) => state.files[key] && state.files[key].file);
-      const hasErrors = FILE_KEYS.some((key) => state.files[key] && state.files[key].error);
-      const ready = Boolean(state.empresa) && filesReady && !hasErrors && !state.ejecutando;
+      const group = currentGroupConfig();
+      const xlsxReady = ['detalle', 'maestro', 'sindicato'].every((key) => state.files[key] && state.files[key].file);
+      const fonasaReady = Array.isArray(state.files.fonasa) && state.files.fonasa.length > 0;
+      const hasErrors = Object.keys(FILE_CONFIG).some((key) => {
+        if (FILE_CONFIG[key].multiple) return state.files[key] && state.files[key].error;
+        return state.files[key] && state.files[key].error;
+      });
+      const ready = group.enabled && xlsxReady && fonasaReady && !hasErrors && !state.executing;
 
       refs.runButton.disabled = !ready;
-      refs.statusPill.textContent = state.ejecutando
-        ? 'Procesando archivos'
-        : ready
-          ? 'Listo para ejecutar'
-          : hasErrors
-            ? 'Hay errores de carga'
-            : state.empresa
-              ? 'Faltan archivos'
-              : 'Esperando empresa y archivos';
+      refs.statusPill.textContent = state.executing
+        ? state.processingLabel || 'Procesando auditoria'
+        : !group.enabled
+          ? 'Grupo no habilitado aun'
+          : ready
+            ? 'Listo para auditar'
+            : hasErrors
+              ? 'Hay errores de carga'
+              : 'Faltan archivos por cargar';
 
-      refs.runHelp.textContent = state.ejecutando
-        ? 'Procesando archivos...'
-        : ready
-          ? 'Todo listo. Ejecuta la auditoria cuando quieras.'
-          : 'Debes seleccionar empresa y cargar los 4 archivos requeridos.';
+      if (state.executing) {
+        refs.runHelp.textContent = state.processingLabel || 'Procesando archivos y reglas...';
+      } else if (!group.enabled) {
+        refs.runHelp.textContent = 'Esta etapa solo deja habilitado Grupo Crux.';
+      } else if (ready) {
+        refs.runHelp.textContent = 'Todo listo. La auditoria revisara las 7 reglas del grupo seleccionado.';
+      } else {
+        refs.runHelp.textContent = 'Carga los 4 insumos para habilitar la ejecucion.';
+      }
     }
 
-    function setExecuting(isExecuting) {
-      state.ejecutando = isExecuting;
-      refs.runIcon.textContent = isExecuting ? '⏳' : '▶';
-      refs.runLabel.textContent = isExecuting ? 'Procesando archivos...' : 'Ejecutar Auditoria';
+    function setExecuting(flag, label = '') {
+      state.executing = flag;
+      state.processingLabel = label;
+      refs.runIcon.textContent = flag ? '⏳' : '▶';
+      refs.runLabel.textContent = flag ? 'Procesando auditoria...' : `Ejecutar auditoria ${currentGroupConfig().label}`;
       updateRunState();
     }
 
-    function setFilterButtonState() {
+    function setProcessingLabel(label) {
+      state.processingLabel = label;
+      updateRunState();
+    }
+
+    function setFilterButtons() {
       document.querySelectorAll('.filter-btn').forEach((button) => {
-        const active = button.dataset.filter === state.filtroActual;
+        const active = button.dataset.filter === state.filter;
         button.className = active
-          ? 'filter-btn rounded-full border border-slate-200 bg-auditCyan px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600'
-          : 'filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-200 hover:text-cyan-600';
+          ? 'filter-btn rounded-full border border-slate-200 bg-auditBlue px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700'
+          : 'filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700';
       });
     }
 
-    function detectarEmpresasDeRex(rows) {
-      // Buscar índice de "Nombre empresa" en fila de headers (índice 4)
-      const headers = rows[4] || [];
-      const iEmpresa = headers.findIndex(h => normalizarTexto(h) === 'nombre empresa');
-      const idx = iEmpresa >= 0 ? iEmpresa : 1;
-
-      const set = new Set();
-      for (let i = 5; i < rows.length; i++) {
-        const val = String(rows[i][idx] || '').trim();
-        if (val) set.add(val);
-      }
-      return Array.from(set).sort();
-    }
-
-    function poblarDropdownEmpresas(empresas) {
-      const select = refs.empresaSelect;
-      const valorActual = state.empresa;
-      select.innerHTML = '<option value="" disabled>-- Selecciona empresa --</option>';
-      empresas.forEach(nombre => {
-        const opt = document.createElement('option');
-        opt.value = normalizarTexto(nombre);
-        opt.textContent = nombre;
-        if (opt.value === valorActual) opt.selected = true;
-        select.appendChild(opt);
-      });
-      if (!valorActual) select.options[0].selected = true;
-      EMPRESAS_REX = empresas.map(n => ({ label: n, value: normalizarTexto(n) }));
+    function getFilteredFindings() {
+      if (state.filter === 'all') return state.findings;
+      return state.findings.filter((item) => item.severity === state.filter);
     }
 
     async function readWorkbook(file) {
@@ -511,396 +784,845 @@
       });
     }
 
-    function sheetToRows(workbook) {
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      return XLSX.utils.sheet_to_json(sheet, {
+    function getSheetRows(workbook, preferredNames = []) {
+      const desired = preferredNames.map(normalizeKey);
+      const name = workbook.SheetNames.find((sheetName) => desired.includes(normalizeKey(sheetName))) || workbook.SheetNames[0];
+      return XLSX.utils.sheet_to_json(workbook.Sheets[name], {
         header: 1,
         raw: false,
         defval: ''
       });
     }
 
-    function parseCredito(rows) {
-      const mapaCredito = new Map();
-      let ultimoRut = ''; // propagar RUT cuando la celda está vacía en filas secundarias
+    function createHeaderIndex(...rows) {
+      const map = new Map();
+      rows.forEach((row) => {
+        (row || []).forEach((cell, index) => {
+          const key = normalizeKey(cell);
+          if (key && !map.has(key)) map.set(key, index);
+        });
+      });
 
-      for (let index = 19; index < rows.length; index += 1) {
-        const fila = rows[index] || [];
-        const rutRaw = fila[1];
-        const montoRaw = fila[8]; // col I = "Valor a Descontar"
-
-        if (rutRaw && String(rutRaw).includes('SUBSTITUTE')) continue;
-
-        // Si la celda de RUT tiene valor, actualizarlo; si está vacía usar el último RUT
-        if (rutRaw && String(rutRaw).trim()) {
-          ultimoRut = normalizarRut(rutRaw);
-        }
-
-        if (!ultimoRut || !montoRaw) continue;
-
-        const monto = parsearMonto(montoRaw);
-
-        if (ultimoRut && monto > 0) {
-          mapaCredito.set(ultimoRut, (mapaCredito.get(ultimoRut) || 0) + monto);
-        }
-      }
-
-      return mapaCredito;
-    }
-
-    function parseAhorro(rows) {
-      const mapaAhorro = new Map();
-
-      for (let index = 16; index < rows.length; index += 1) {
-        const fila = rows[index] || [];
-        const rutRaw = fila[2];
-        const montoRaw = fila[9]; // col J = "Total $" en pesos (corregido: era [7] = Aporte UF)
-
-        if (!rutRaw || String(rutRaw).includes('SUBSTITUTE')) continue;
-        if (!rutRaw || !montoRaw) continue;
-
-        const rut = normalizarRut(rutRaw);
-        const monto = parsearMonto(montoRaw);
-
-        if (rut && monto > 0) {
-          mapaAhorro.set(rut, (mapaAhorro.get(rut) || 0) + monto);
-        }
-      }
-
-      return mapaAhorro;
-    }
-
-    function parseRex(rows) {
-      const mapaRex = new Map();
-      const empresaFiltro = state.empresa; // ya es el nombre exacto en lowercase
-
-      // Algunos archivos exponen nombres técnicos en la fila 4 y legibles en la fila 5.
-      const headersTecnicos = rows[3] || [];
-      const headersLegibles = rows[4] || [];
-
-      function colIdx(...nombres) {
-        for (const headers of [headersTecnicos, headersLegibles]) {
-          for (const nombre of nombres) {
-            const idx = headers.findIndex(h => normalizarTexto(h) === normalizarTexto(nombre));
-            if (idx >= 0) return idx;
+      return {
+        get(...names) {
+          for (const name of names) {
+            const key = normalizeKey(name);
+            if (map.has(key)) return map.get(key);
           }
+          return -1;
         }
+      };
+    }
 
-        return -1;
+    function getCell(row, index) {
+      return index >= 0 ? row[index] : '';
+    }
+
+    function parseDetalle(workbook) {
+      const rows = getSheetRows(workbook);
+      const headersTech = rows[3] || [];
+      const headersReadable = rows[4] || [];
+      const columns = createHeaderIndex(headersTech, headersReadable);
+
+      const indexes = {
+        process: columns.get('Proceso'),
+        company: columns.get('Nombre empresa'),
+        name: columns.get('Nombre'),
+        rut: columns.get('Rut'),
+        site: columns.get('Sede'),
+        daysWorked: columns.get('dtr', 'Dias Trabajados', 'Días Trabajados'),
+        cargo: columns.get('cargo', 'Cargo'),
+        salaryNet: columns.get('liquido', 'Sueldo Liquido', 'Sueldo Líquido'),
+        compensaSobre: columns.get('compensaSobre', 'Compensacion Sobregiro'),
+        aporteSindMov: columns.get('aportsindmov', 'Aporte Sindical Movilizacion', 'Aporte Sindical Movilización'),
+        cajaCred: columns.get('cajaCred', 'Creditos personales CCAF'),
+        cajaVida: columns.get('cajaVida', 'Descuentos por seguro de vida CCAF'),
+        cajaAhorro: columns.get('cajaAhor', 'Ahorro en CCAF'),
+        cajaComp: columns.get('cajaComp', 'Aporte a CCAF'),
+        imponible: columns.get('habeSinTope', 'Total imponible sin tope'),
+        sindicato1: columns.get('sindicato', 'Sindicato'),
+        sindicato2: columns.get('Sindicato 2'),
+        tipoContrato: columns.get('tipoContrato', 'Tipo Contrato'),
+        fechaTerm: columns.get('fechaTerm', 'Fecha Término'),
+        fonasa: columns.get('prestmedicofonasa', 'Prestamo Medico Fonasa', 'Préstamo Medico Fonasa'),
+        cuotaSindical: columns.get('cuotasindical', 'Cuota Sindical'),
+        cuotaConfederacion: columns.get('sindsimpaecuotaconfp', 'Cuota Confederacion', 'Cuota Confederación')
+      };
+
+      const companies = groupCompanySet();
+      const records = [];
+      let auditMonth = null;
+
+      for (let rowIndex = 5; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const company = String(getCell(row, indexes.company) || '').trim();
+        if (!companies.has(normalizeText(company))) continue;
+
+        const process = String(getCell(row, indexes.process) || '').trim();
+        if (!auditMonth && process) auditMonth = buildAuditMonth(process);
+
+        const rut = normalizeRut(getCell(row, indexes.rut));
+        const name = String(getCell(row, indexes.name) || '').trim();
+        if (!rut || !name) continue;
+
+        records.push({
+          process,
+          company,
+          name,
+          rut,
+          site: String(getCell(row, indexes.site) || '').trim(),
+          daysWorked: parseAmount(getCell(row, indexes.daysWorked)),
+          cargo: String(getCell(row, indexes.cargo) || '').trim(),
+          salaryNet: parseAmount(getCell(row, indexes.salaryNet)),
+          compensaSobre: parseAmount(getCell(row, indexes.compensaSobre)),
+          aporteSindMov: parseAmount(getCell(row, indexes.aporteSindMov)),
+          cajaCred: parseAmount(getCell(row, indexes.cajaCred)),
+          cajaVida: parseAmount(getCell(row, indexes.cajaVida)),
+          cajaAhorro: parseAmount(getCell(row, indexes.cajaAhorro)),
+          cajaComp: parseAmount(getCell(row, indexes.cajaComp)),
+          imponible: parseAmount(getCell(row, indexes.imponible)),
+          sindicato1: String(getCell(row, indexes.sindicato1) || '').trim(),
+          sindicato2: String(getCell(row, indexes.sindicato2) || '').trim(),
+          tipoContrato: String(getCell(row, indexes.tipoContrato) || '').trim(),
+          fechaTerm: parseExcelDate(getCell(row, indexes.fechaTerm)),
+          fonasa: parseAmount(getCell(row, indexes.fonasa)),
+          cuotaSindical: parseAmount(getCell(row, indexes.cuotaSindical)),
+          cuotaConfederacion: parseAmount(getCell(row, indexes.cuotaConfederacion))
+        });
       }
-      const iEmpresa  = colIdx('nombre empresa');
-      const iNombre   = colIdx('nombre');
-      const iRut      = colIdx('rut');
-      const iCajaCred = colIdx('cajaCred', 'creditos personales ccaf');
-      const iCajaVida = colIdx('cajaVida', 'descuentos por seguro de vida ccaf');
-      const iCajaAhor = colIdx('cajaAhor', 'ahorro en ccaf');
 
-      // Fallback a índices fijos si no se encuentran los headers
-      const idxEmpresa  = iEmpresa  >= 0 ? iEmpresa  : 1;
-      const idxNombre   = iNombre   >= 0 ? iNombre   : 4;
-      const idxRut      = iRut      >= 0 ? iRut      : 5;
-      const idxCajaCred = iCajaCred >= 0 ? iCajaCred : 45;
-      const idxCajaVida = iCajaVida >= 0 ? iCajaVida : 46;
-      const idxCajaAhor = iCajaAhor >= 0 ? iCajaAhor : 47;
+      return { records, auditMonth };
+    }
 
-      for (let index = 5; index < rows.length; index += 1) {
-        const fila = rows[index] || [];
-        const nombreEmpresa = normalizarTexto(fila[idxEmpresa]);
-        if (nombreEmpresa !== empresaFiltro) continue;
+    function parseMaestro(workbook) {
+      const rows = getSheetRows(workbook);
+      const headers = rows[1] || [];
+      const columns = createHeaderIndex(headers);
+      const companies = groupCompanySet();
+      const map = new Map();
 
-        const rutRaw = fila[idxRut];
-        if (!rutRaw) continue;
+      for (let rowIndex = 2; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const company = String(getCell(row, columns.get('nombre_empresa')) || '').trim();
+        if (!companies.has(normalizeText(company))) continue;
 
-        const rut = normalizarRut(rutRaw);
+        const rut = normalizeRut(getCell(row, columns.get('empleado')));
         if (!rut) continue;
 
-        const cajaCred = parsearMonto(fila[idxCajaCred]);
-        const cajaVida = parsearMonto(fila[idxCajaVida]);
-        const cajaAhor = parsearMonto(fila[idxCajaAhor]);
-
-        const anterior = mapaRex.get(rut) || {
-          nombre: '',
-          montoCredito: 0,
-          montoAhorro: 0
+        const current = map.get(rut);
+        const item = {
+          rut,
+          company,
+          name: String(getCell(row, columns.get('nombre_completo')) || '').trim(),
+          status: String(getCell(row, columns.get('estado')) || '').trim(),
+          contractType: String(getCell(row, columns.get('tipoCont')) || '').trim(),
+          contractMode: String(getCell(row, columns.get('modalidad_contrato')) || '').trim(),
+          startDate: parseExcelDate(getCell(row, columns.get('fechaInic'))),
+          endDate: parseExcelDate(getCell(row, columns.get('fechaTerm'))),
+          causal: String(getCell(row, columns.get('causal')) || '').trim(),
+          causalName: String(getCell(row, columns.get('nombre_causal')) || '').trim(),
+          cargo: String(getCell(row, columns.get('nombre_cargo')) || '').trim(),
+          site: String(getCell(row, columns.get('nombre_sede')) || '').trim(),
+          sindicato1: String(getCell(row, columns.get('nombre_sindicato')) || '').trim(),
+          sindicato2: String(getCell(row, columns.get('Sindicato 2 (Nombre)')) || '').trim(),
+          agrupacion: String(getCell(row, columns.get('nombre_agrupacion')) || '').trim(),
+          renewalDate1: parseExcelDate(getCell(row, columns.get('fecha_renovacion'))),
+          renewalDate2: parseExcelDate(getCell(row, columns.get('fecha_renovacion_2')))
         };
 
-        mapaRex.set(rut, {
-          nombre: anterior.nombre || String(fila[idxNombre] || '').trim(),
-          montoCredito: anterior.montoCredito + cajaCred + cajaVida,
-          montoAhorro: anterior.montoAhorro + cajaAhor
-        });
+        if (!current || normalizeKey(item.status) === 'activo') {
+          map.set(rut, item);
+        }
       }
 
-      return mapaRex;
+      return map;
     }
 
-    function parseMaestro(rows) {
-      const mapaMaestro = new Map();
+    function parseSindicatoWorkbook(workbook, validRuts) {
+      const cuotaRows = getSheetRows(workbook, ['CUOTAS']);
+      const correctionRows = getSheetRows(workbook, ['CORRECIONES']);
+      const quotaHeader = cuotaRows[0] || [];
+      const correctionHeader = correctionRows[1] || [];
+      const quotaColumns = createHeaderIndex(quotaHeader);
+      const correctionColumns = createHeaderIndex(correctionHeader);
 
-      for (let index = 2; index < rows.length; index += 1) {
-        const fila = rows[index] || [];
-        const rutBase = String(fila[0] || '')
-          .replace(/\./g, '')
-          .replace(/\s/g, '')
-          .trim();
+      const exclusions = new Set();
+      const overrides = new Map();
 
-        if (!rutBase) continue;
+      for (let rowIndex = 2; rowIndex < correctionRows.length; rowIndex += 1) {
+        const row = correctionRows[rowIndex] || [];
+        const name = normalizeText(getCell(row, correctionColumns.get('NOMBRE')));
+        const rut = normalizeRut(getCell(row, correctionColumns.get('RUT')));
+        const reason = normalizeText(getCell(row, correctionColumns.get('motivo')));
+        const correctedRut = normalizeRut(getCell(row, correctionColumns.get('corregir')));
+        const sindicato = normalizeText(getCell(row, correctionColumns.get('SINDICATO')));
 
-        mapaMaestro.set(rutBase, {
-          nombre_completo: String(fila[2] || '').trim(),
-          estado: String(fila[21] || '').trim(),
-          nombre_empresa: String(fila[25] || '').trim(),
-          nombre_sede: String(fila[30] || '').trim()
-        });
-      }
-
-      return mapaMaestro;
-    }
-
-    function buscarEnMaestro(rutNormalizado, mapaMaestro) {
-      if (mapaMaestro.has(rutNormalizado)) return mapaMaestro.get(rutNormalizado);
-      const rutSinDv = rutNormalizado.split('-')[0];
-      if (mapaMaestro.has(rutSinDv)) return mapaMaestro.get(rutSinDv);
-      return null;
-    }
-
-    function construirResultados(mapaCredito, mapaAhorro, mapaRex, mapaMaestro) {
-      const universo = new Set([
-        ...mapaCredito.keys(),
-        ...mapaAhorro.keys(),
-        ...mapaRex.keys()
-      ]);
-
-      const resultados = [];
-
-      for (const rut of universo) {
-        const montoCajaCredito = mapaCredito.get(rut) || 0;
-        const montoCajaAhorro = mapaAhorro.get(rut) || 0;
-        const datosRex = mapaRex.get(rut) || null;
-        const montoRexCredito = datosRex ? datosRex.montoCredito : 0;
-        const montoRexAhorro = datosRex ? datosRex.montoAhorro : 0;
-        const datosMaestro = buscarEnMaestro(rut, mapaMaestro);
-
-        const difCredito = Math.abs(montoCajaCredito - montoRexCredito) > 1;
-        const difAhorro = Math.abs(montoCajaAhorro - montoRexAhorro) > 1;
-
-        if (!mapaCredito.has(rut) && !mapaAhorro.has(rut) && montoRexCredito === 0 && montoRexAhorro === 0) {
+        if (!sindicato) continue;
+        if (reason.includes('FINIQUIT')) {
+          if (rut) exclusions.add(`${rut}|${sindicato}`);
+          if (name) exclusions.add(`${name}|${sindicato}`);
           continue;
         }
 
-        let estado = '✅';
-        let motivo = 'OK';
+        if (correctedRut) {
+          if (rut) overrides.set(`${rut}|${sindicato}`, correctedRut);
+          if (name) overrides.set(`${name}|${sindicato}`, correctedRut);
+        }
+      }
 
-        if (!datosRex) {
-          estado = '❌';
-          motivo = 'RUT en Caja no encontrado en Rex';
-        } else if (difCredito || difAhorro) {
-          estado = '⚠️';
-          const partes = [];
+      const map = new Map();
 
-          if (difCredito) {
-            partes.push(`Credito: Caja ${formatMonto(montoCajaCredito)} vs Rex ${formatMonto(montoRexCredito)}`);
-          }
+      for (let rowIndex = 1; rowIndex < cuotaRows.length; rowIndex += 1) {
+        const row = cuotaRows[rowIndex] || [];
+        const originalRut = normalizeRut(getCell(row, quotaColumns.get('RUT')));
+        const name = normalizeText(getCell(row, quotaColumns.get('NOMBRE')));
+        const sindicato = String(getCell(row, quotaColumns.get('SINDICATO')) || '').trim();
+        const sindicatoNorm = normalizeText(sindicato);
+        if (!sindicatoNorm) continue;
 
-          if (difAhorro) {
-            partes.push(`Ahorro: Caja ${formatMonto(montoCajaAhorro)} vs Rex ${formatMonto(montoRexAhorro)}`);
-          }
-
-          motivo = 'Diferencia en ' + partes.join(' | ');
+        if (exclusions.has(`${originalRut}|${sindicatoNorm}`) || exclusions.has(`${name}|${sindicatoNorm}`)) {
+          continue;
         }
 
-        if (estado !== '✅' && datosMaestro && normalizarTexto(datosMaestro.estado) !== 'activo') {
-          motivo = `Empleado ${datosMaestro.estado || 'inactivo'} en Maestro | ${motivo}`;
-        }
+        const correctedRut = overrides.get(`${originalRut}|${sindicatoNorm}`) || overrides.get(`${name}|${sindicatoNorm}`) || originalRut;
+        if (!correctedRut || (validRuts && !validRuts.has(correctedRut))) continue;
 
-        resultados.push({
+        if (!map.has(correctedRut)) map.set(correctedRut, new Set());
+        map.get(correctedRut).add(sindicato);
+      }
+
+      return map;
+    }
+
+    function buildEmployeeMaps(detailRecords, maestroMap) {
+      const detailByRut = new Map();
+
+      detailRecords.forEach((record) => {
+        detailByRut.set(record.rut, record);
+      });
+
+      function contextForRut(rut) {
+        const detail = detailByRut.get(rut);
+        const maestro = maestroMap.get(rut);
+        return {
           rut,
-          nombre: datosMaestro?.nombre_completo || datosRex?.nombre || '—',
-          empresa: datosMaestro?.nombre_empresa || '—',
-          sede: datosMaestro?.nombre_sede || '—',
-          estadoEmpleado: datosMaestro?.estado || 'No en Maestro',
-          montoCajaCredito,
-          montoRexCredito,
-          montoCajaAhorro,
-          montoRexAhorro,
-          estado,
-          motivo
+          name: detail?.name || maestro?.name || 'Sin nombre',
+          company: detail?.company || maestro?.company || 'Sin empresa',
+          site: detail?.site || maestro?.site || 'Sin sede',
+          detail,
+          maestro
+        };
+      }
+
+      return { detailByRut, contextForRut };
+    }
+
+    function createFinding(ruleId, severity, context, detail, bookValue = '', externalValue = '', reference = '') {
+      const rule = RULE_DEFINITIONS.find((item) => item.id === ruleId);
+      return {
+        ruleId,
+        ruleTitle: rule ? rule.title : ruleId,
+        severity,
+        rut: context?.rut || 'Sin RUT',
+        name: context?.name || 'Sin nombre',
+        company: context?.company || 'Sin empresa',
+        detail,
+        bookValue,
+        externalValue,
+        reference
+      };
+    }
+
+    function runRuleDays(detailRecords, contextForRut) {
+      const findings = detailRecords
+        .filter((record) => record.daysWorked === 0 && Math.abs(record.salaryNet) > 1)
+        .map((record) => createFinding(
+          'dias-liquido',
+          'alta',
+          contextForRut(record.rut),
+          'Tiene 0 dias trabajados y sueldo liquido distinto de cero.',
+          formatAmount(record.salaryNet),
+          '0 dias trabajados',
+          record.site || record.process
+        ));
+
+      return {
+        id: 'dias-liquido',
+        reviewed: detailRecords.length,
+        findings,
+        note: findings.length
+          ? `${findings.length} personas con pago liquido pese a registrar 0 dias trabajados.`
+          : 'Sin casos detectados.'
+      };
+    }
+
+    function runRuleMovilizacion(detailRecords, contextForRut) {
+      const findings = detailRecords
+        .filter((record) => {
+          const cargo = normalizeKey(record.cargo);
+          const hasSyndicate = [record.sindicato1, record.sindicato2].some(isMeaningfulSyndicate);
+          return cargo.includes('manipulador') && cargo.includes('alimentos') && hasSyndicate && Math.abs(record.aporteSindMov) < 1;
+        })
+        .map((record) => createFinding(
+          'movilizacion-sindical',
+          'media',
+          contextForRut(record.rut),
+          'Manipuladora sindicalizada sin Aporte Sindical Movilizacion.',
+          formatAmount(record.aporteSindMov),
+          [record.sindicato1, record.sindicato2].filter(isMeaningfulSyndicate).join(' | '),
+          record.cargo
+        ));
+
+      return {
+        id: 'movilizacion-sindical',
+        reviewed: detailRecords.length,
+        findings,
+        note: findings.length
+          ? `${findings.length} manipuladoras con sindicato sin el haber esperado.`
+          : 'Todas las manipuladoras sindicalizadas revisadas tienen el haber informado.'
+      };
+    }
+
+    function runRuleSobregiro(detailRecords, contextForRut) {
+      const findings = detailRecords
+        .filter((record) => Math.abs(record.compensaSobre) > 1)
+        .map((record) => createFinding(
+          'sobregiro',
+          'alta',
+          contextForRut(record.rut),
+          'Registra Compensacion Sobregiro distinta de cero.',
+          formatAmount(record.compensaSobre),
+          'Debe ser $0',
+          record.process
+        ));
+
+      return {
+        id: 'sobregiro',
+        reviewed: detailRecords.length,
+        findings,
+        note: findings.length
+          ? `${findings.length} registros con compensacion sobregiro.`
+          : 'No se detectaron compensaciones sobregiro.'
+      };
+    }
+
+    function runRuleCaja25(detailRecords, contextForRut) {
+      const findings = [];
+
+      detailRecords.forEach((record) => {
+        const totalCaja = record.cajaCred + record.cajaVida + record.cajaAhorro + record.cajaComp;
+        if (totalCaja <= 0) return;
+
+        if (record.imponible <= 0) {
+          findings.push(createFinding(
+            'caja-25',
+            'alta',
+            contextForRut(record.rut),
+            'Tiene descuentos de caja con imponible cero o no informado.',
+            formatAmount(totalCaja),
+            formatAmount(record.imponible),
+            'No es posible validar el 25%'
+          ));
+          return;
+        }
+
+        const ratio = totalCaja / record.imponible;
+        if (ratio > 0.25) {
+          findings.push(createFinding(
+            'caja-25',
+            'alta',
+            contextForRut(record.rut),
+            'Los descuentos de caja superan el 25% del imponible.',
+            `${formatAmount(totalCaja)} (${(ratio * 100).toFixed(1)}%)`,
+            formatAmount(record.imponible),
+            `Credito ${formatAmount(record.cajaCred)} | Vida ${formatAmount(record.cajaVida)} | Ahorro ${formatAmount(record.cajaAhorro)} | Aporte ${formatAmount(record.cajaComp)}`
+          ));
+        }
+      });
+
+      return {
+        id: 'caja-25',
+        reviewed: detailRecords.length,
+        findings,
+        note: findings.length
+          ? `${findings.length} personas exceden el umbral del 25%.`
+          : 'Los descuentos de caja quedan bajo el 25% del imponible en los registros revisados.'
+      };
+    }
+
+    function collectLibroSindicatos(record) {
+      const set = new Set();
+      [record?.sindicato1, record?.sindicato2].forEach((value) => {
+        if (isMeaningfulSyndicate(value)) set.add(String(value).trim());
+      });
+      return Array.from(set);
+    }
+
+    function runRuleSindicatos(detailRecords, maestroMap, nominaMap, contextForRut) {
+      const findings = [];
+      const selectedRuts = new Set([
+        ...detailRecords.map((record) => record.rut),
+        ...maestroMap.keys(),
+        ...nominaMap.keys()
+      ]);
+
+      selectedRuts.forEach((rut) => {
+        const context = contextForRut(rut);
+        const libroSindicatos = collectLibroSindicatos(context.detail);
+        const libroNorm = new Set(libroSindicatos.map(normalizeText));
+        const nominaSindicatos = Array.from(nominaMap.get(rut) || []);
+        const nominaNorm = new Set(nominaSindicatos.map(normalizeText));
+
+        libroSindicatos.forEach((sindicato) => {
+          if (!nominaNorm.has(normalizeText(sindicato))) {
+            findings.push(createFinding(
+              'sindicatos',
+              'media',
+              context,
+              'Sindicato presente en libro pero ausente en nomina sindical.',
+              sindicato,
+              nominaSindicatos.join(' | ') || 'Sin registro',
+              'Validacion por mismo RUT + mismo sindicato'
+            ));
+          }
+        });
+
+        nominaSindicatos.forEach((sindicato) => {
+          if (!libroNorm.has(normalizeText(sindicato))) {
+            findings.push(createFinding(
+              'sindicatos',
+              'media',
+              context,
+              'Sindicato presente en nomina pero no encontrado en libro.',
+              libroSindicatos.join(' | ') || 'Sin sindicato en libro',
+              sindicato,
+              'Validacion por mismo RUT + mismo sindicato'
+            ));
+          }
+        });
+      });
+
+      return {
+        id: 'sindicatos',
+        reviewed: selectedRuts.size,
+        findings,
+        note: findings.length
+          ? `${findings.length} diferencias entre libro y nomina sindical.`
+          : 'Libro y nomina sindical cuadran para los RUT revisados.'
+      };
+    }
+
+    function runRuleRenovaciones(maestroMap, auditMonth, contextForRut) {
+      const findings = [];
+      const records = Array.from(maestroMap.values());
+
+      records.forEach((record) => {
+        const contractType = normalizeKey(record.contractType);
+        if (!contractType.includes('plazo')) return;
+        if (!sameMonth(record.endDate, auditMonth)) return;
+
+        const hasCausal = hasMeaningfulCausal(record.causal, record.causalName);
+        const hasRenewal = sameMonth(record.renewalDate1, auditMonth) || sameMonth(record.renewalDate2, auditMonth) || Boolean(record.renewalDate1 || record.renewalDate2);
+        if (hasCausal || hasRenewal) return;
+
+        findings.push(createFinding(
+          'renovaciones',
+          'media',
+          contextForRut(record.rut),
+          'Contrato plazo fijo con termino en el mes sin causal ni fecha de renovacion visible.',
+          record.endDate ? record.endDate.toLocaleDateString('es-CL') : 'Sin fecha',
+          `${record.causalName || 'Sin causal'} | ${record.contractType || 'Sin tipo'}`,
+          record.cargo || record.site || record.company
+        ));
+      });
+
+      return {
+        id: 'renovaciones',
+        reviewed: records.length,
+        findings,
+        note: findings.length
+          ? `${findings.length} contratos plazo fijo requieren revision de renovacion o termino.`
+          : 'No se detectaron renovaciones pendientes para el mes auditado.'
+      };
+    }
+
+    function detectFonasaCompany(text, filename) {
+      const haystack = `${normalizeText(text)} ${normalizeText(filename)}`;
+      const aliases = currentGroupConfig().fonasaAliases || {};
+
+      for (const [company, companyAliases] of Object.entries(aliases)) {
+        const candidates = [company, ...companyAliases];
+        if (candidates.some((candidate) => haystack.includes(normalizeText(candidate)))) {
+          return company;
+        }
+      }
+
+      return 'Empresa no identificada';
+    }
+
+    async function renderPdfPageToCanvas(page) {
+      const viewport = page.getViewport({ scale: 1.8 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      await page.render({ canvasContext: context, viewport }).promise;
+      return canvas;
+    }
+
+    async function runOcr(source, progressPrefix) {
+      const result = await Tesseract.recognize(source, 'spa', {
+        logger: (info) => {
+          if (info.status === 'recognizing text' && typeof info.progress === 'number') {
+            const pct = Math.round(info.progress * 100);
+            setProcessingLabel(`${progressPrefix} ${pct}%`);
+          }
+        }
+      });
+      return result.data.text || '';
+    }
+
+    async function extractTextFromFonasaFile(file, index, total) {
+      const prefix = `Leyendo Fonasa ${index}/${total}: ${file.name}`;
+      setProcessingLabel(prefix);
+
+      if (/\.pdf$/i.test(file.name)) {
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        const pagesText = [];
+
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          setProcessingLabel(`${prefix} - pagina ${pageNumber}/${pdf.numPages}`);
+          const page = await pdf.getPage(pageNumber);
+          const textContent = await page.getTextContent();
+          const directText = textContent.items.map((item) => item.str).join(' ').trim();
+
+          if (directText.length > 80) {
+            pagesText.push(directText);
+          } else {
+            const canvas = await renderPdfPageToCanvas(page);
+            const ocrText = await runOcr(canvas, `${prefix} - OCR pagina ${pageNumber}/${pdf.numPages}`);
+            pagesText.push(ocrText);
+          }
+        }
+
+        return pagesText.join('\n');
+      }
+
+      return runOcr(file, prefix);
+    }
+
+    function normalizeOcrText(text) {
+      return String(text || '')
+        .replace(/\r/g, '\n')
+        .replace(/[|]/g, ' ')
+        .replace(/[“”]/g, '"')
+        .replace(/[‘’]/g, "'")
+        .replace(/\u00A0/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+    }
+
+    function parseFonasaEntries(text, filename) {
+      const normalizedText = normalizeOcrText(text).toUpperCase();
+      const company = detectFonasaCompany(normalizedText, filename);
+      const lines = normalizedText.split('\n').map((line) => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      const entries = [];
+
+      for (const line of lines) {
+        const match = line.match(/(\d{7,8}\s*-\s*[\dK])\s+([A-ZÁÉÍÓÚÑÜ ]{5,}?)\s+(?:\$?\s*)([\d.,]{4,})$/);
+        if (!match) continue;
+
+        const rut = normalizeRut(match[1]);
+        const name = match[2].replace(/\s+/g, ' ').trim();
+        const amount = parseAmount(match[3]);
+        if (!rut || !name || amount <= 0) continue;
+
+        entries.push({
+          rut,
+          name,
+          amount,
+          company,
+          sourceFile: filename
         });
       }
 
-      const orden = { '❌': 0, '⚠️': 1, '✅': 2 };
-      resultados.sort((a, b) => {
-        const ordenEstado = orden[a.estado] - orden[b.estado];
-        if (ordenEstado !== 0) return ordenEstado;
-        return a.rut.localeCompare(b.rut, 'es');
+      const totalMatch = normalizedText.match(/TOTAL\s*:?\s*\$?\s*([\d.,]{4,})/);
+      const total = totalMatch ? parseAmount(totalMatch[1]) : entries.reduce((sum, item) => sum + item.amount, 0);
+
+      return { company, entries, total, rawText: normalizedText };
+    }
+
+    async function parseFonasaDocuments(files) {
+      const docs = [];
+      const errors = [];
+      const totalsByCompany = new Map();
+
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        try {
+          const text = await extractTextFromFonasaFile(file, index + 1, files.length);
+          const parsed = parseFonasaEntries(text, file.name);
+          docs.push(parsed);
+          const current = totalsByCompany.get(parsed.company) || { reported: 0, extracted: 0 };
+          current.reported += parsed.total || 0;
+          current.extracted += parsed.entries.reduce((sum, item) => sum + item.amount, 0);
+          totalsByCompany.set(parsed.company, current);
+        } catch (error) {
+          console.error('Error leyendo Fonasa', file.name, error);
+          errors.push({ file: file.name, message: 'No se pudo leer el documento.' });
+        }
+      }
+
+      return { docs, errors, totalsByCompany };
+    }
+
+    function runRuleFonasa(detailRecords, contextForRut, fonasaParsed) {
+      const findings = [];
+      const libroByRut = new Map();
+      const externalByRut = new Map();
+
+      detailRecords.forEach((record) => {
+        if (record.fonasa > 0) {
+          libroByRut.set(record.rut, {
+            amount: (libroByRut.get(record.rut)?.amount || 0) + record.fonasa,
+            company: record.company
+          });
+        }
       });
 
-      return resultados;
+      fonasaParsed.docs.forEach((doc) => {
+        doc.entries.forEach((entry) => {
+          const current = externalByRut.get(entry.rut) || {
+            amount: 0,
+            company: entry.company,
+            references: []
+          };
+          current.amount += entry.amount;
+          current.references.push(entry.sourceFile);
+          externalByRut.set(entry.rut, current);
+        });
+      });
+
+      const allRuts = new Set([...libroByRut.keys(), ...externalByRut.keys()]);
+
+      allRuts.forEach((rut) => {
+        const libro = libroByRut.get(rut)?.amount || 0;
+        const external = externalByRut.get(rut)?.amount || 0;
+        const context = contextForRut(rut);
+        const reference = externalByRut.get(rut)?.references.join(' | ') || 'Sin documento';
+
+        if (Math.abs(libro - external) <= 1) return;
+
+        const severity = libro && external ? 'alta' : 'media';
+        const detail = libro && external
+          ? 'Monto Fonasa distinto entre libro y documento.'
+          : libro
+            ? 'Existe descuento Fonasa en libro pero no fue encontrado en los documentos.'
+            : 'Existe prestamo Fonasa en documento pero no aparece descontado en el libro.';
+
+        findings.push(createFinding(
+          'fonasa',
+          severity,
+          context,
+          detail,
+          formatAmount(libro),
+          formatAmount(external),
+          reference
+        ));
+      });
+
+      fonasaParsed.errors.forEach((error) => {
+        findings.push(createFinding(
+          'fonasa',
+          'baja',
+          { rut: 'Sin RUT', name: 'Documento no leido', company: 'Fonasa' },
+          'No se pudo procesar automaticamente un documento Fonasa.',
+          error.file,
+          '',
+          error.message
+        ));
+      });
+
+      const companyNotes = [];
+      fonasaParsed.totalsByCompany.forEach((value, company) => {
+        companyNotes.push(`${company}: total documento ${formatAmount(value.reported)} | suma extraida ${formatAmount(value.extracted)}`);
+      });
+
+      return {
+        id: 'fonasa',
+        reviewed: allRuts.size,
+        findings,
+        note: companyNotes.length
+          ? companyNotes.join(' || ')
+          : 'No se pudieron consolidar totales Fonasa.'
+      };
     }
 
-    function porcentaje(parte, total) {
-      if (!total) return '0% del total';
-      return `${Math.round((parte / total) * 100)}% del total`;
+    function summarizeRule(ruleResult) {
+      return {
+        id: ruleResult.id,
+        title: RULE_DEFINITIONS.find((rule) => rule.id === ruleResult.id)?.title || ruleResult.id,
+        reviewed: ruleResult.reviewed,
+        findingCount: ruleResult.findings.length,
+        status: ruleResult.findings.length ? 'Con hallazgos' : 'OK',
+        note: ruleResult.note
+      };
     }
 
-    function getResultadosFiltrados() {
-      if (state.filtroActual === 'all') return state.resultados;
-      return state.resultados.filter((item) => item.estado === state.filtroActual);
-    }
+    function renderSummaries() {
+      refs.auditMonthPill.textContent = monthLabel(state.auditMonth);
+      refs.auditMonthResults.textContent = monthLabel(state.auditMonth);
+      refs.summaryFindings.textContent = state.findings.length.toLocaleString('es-CL');
+      refs.summaryRulesAlert.textContent = state.summaries.filter((item) => item.findingCount > 0).length.toLocaleString('es-CL');
+      refs.summaryCompanies.textContent = state.companyCount.toLocaleString('es-CL');
+      refs.summaryCompaniesNote.textContent = `${state.companyCount.toLocaleString('es-CL')} empresas con movimientos en el periodo`;
+      refs.summaryFonasaDocs.textContent = state.fonasaDocuments.toLocaleString('es-CL');
+      refs.summaryFonasaNote.textContent = `${state.fonasaDocuments.toLocaleString('es-CL')} archivos leidos para la conciliacion`;
 
-    function rowClassByEstado(estado) {
-      if (estado === '✅') return 'bg-[#f0fdf4]';
-      if (estado === '⚠️') return 'bg-[#fefce8]';
-      return 'bg-[#fef2f2]';
-    }
-
-    function renderResumen() {
-      const total = state.resultados.length;
-      const ok = state.resultados.filter((item) => item.estado === '✅').length;
-      const diff = state.resultados.filter((item) => item.estado === '⚠️').length;
-      const error = state.resultados.filter((item) => item.estado === '❌').length;
-
-      refs.summaryTotal.textContent = total.toLocaleString('es-CL');
-      refs.summaryOk.textContent = ok.toLocaleString('es-CL');
-      refs.summaryDiff.textContent = diff.toLocaleString('es-CL');
-      refs.summaryError.textContent = error.toLocaleString('es-CL');
-      refs.summaryOkPct.textContent = porcentaje(ok, total);
-      refs.summaryDiffPct.textContent = porcentaje(diff, total);
-      refs.summaryErrorPct.textContent = porcentaje(error, total);
+      refs.ruleSummaryGrid.innerHTML = state.summaries.map((summary) => `
+        <article class="rounded-[26px] border ${summary.findingCount ? 'border-amber-200 bg-amber-50/40' : 'border-emerald-200 bg-emerald-50/40'} p-5">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.26em] ${summary.findingCount ? 'text-amber-700' : 'text-emerald-700'}">${summary.status}</p>
+              <h4 class="mt-2 text-lg font-bold text-slate-900">${summary.title}</h4>
+            </div>
+            <div class="rounded-full ${summary.findingCount ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'} px-3 py-1 text-xs font-semibold">
+              ${summary.findingCount} hallazgos
+            </div>
+          </div>
+          <p class="mt-4 text-sm leading-6 text-slate-600">${summary.note}</p>
+          <p class="mt-3 text-xs uppercase tracking-[0.22em] text-slate-400">Universo revisado: ${summary.reviewed.toLocaleString('es-CL')}</p>
+        </article>
+      `).join('');
     }
 
     function renderTable() {
-      const resultados = getResultadosFiltrados();
+      const findings = getFilteredFindings();
 
-      if (!resultados.length) {
+      if (!findings.length) {
         refs.resultsBody.innerHTML = `
           <tr>
-            <td colspan="11" class="px-4 py-10 text-center text-sm text-slate-500">
-              No hay registros para el filtro seleccionado.
+            <td colspan="9" class="px-4 py-10 text-center text-sm text-slate-500">
+              No hay hallazgos para el filtro seleccionado.
             </td>
           </tr>
         `;
       } else {
-        refs.resultsBody.innerHTML = resultados.map((item) => `
-          <tr class="${rowClassByEstado(item.estado)} text-sm text-slate-800">
-            <td class="px-4 py-4 font-semibold">${item.estado}</td>
+        refs.resultsBody.innerHTML = findings.map((item) => `
+          <tr class="${rowClasses(item.severity)} text-sm text-slate-800">
+            <td class="px-4 py-4">
+              <span class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${severityClasses(item.severity)}">
+                ${severityLabel(item.severity)}
+              </span>
+            </td>
+            <td class="px-4 py-4 font-semibold">${item.ruleTitle}</td>
             <td class="px-4 py-4 font-medium">${item.rut}</td>
-            <td class="px-4 py-4">${item.nombre}</td>
-            <td class="px-4 py-4">${item.empresa}</td>
-            <td class="px-4 py-4">${item.sede}</td>
-            <td class="px-4 py-4">${item.estadoEmpleado}</td>
-            <td class="px-4 py-4 font-medium">${formatMonto(item.montoCajaCredito)}</td>
-            <td class="px-4 py-4 font-medium">${formatMonto(item.montoRexCredito)}</td>
-            <td class="px-4 py-4 font-medium">${formatMonto(item.montoCajaAhorro)}</td>
-            <td class="px-4 py-4 font-medium">${formatMonto(item.montoRexAhorro)}</td>
-            <td class="px-4 py-4 leading-6 min-w-[320px] text-slate-700">${item.motivo}</td>
+            <td class="px-4 py-4">${item.name}</td>
+            <td class="px-4 py-4">${item.company}</td>
+            <td class="min-w-[320px] px-4 py-4 leading-6 text-slate-700">${item.detail}</td>
+            <td class="px-4 py-4 font-medium">${item.bookValue || '—'}</td>
+            <td class="px-4 py-4 font-medium">${item.externalValue || '—'}</td>
+            <td class="min-w-[280px] px-4 py-4 text-slate-600">${item.reference || '—'}</td>
           </tr>
         `).join('');
       }
 
-      refs.resultsCount.textContent = `Mostrando ${resultados.length.toLocaleString('es-CL')} de ${state.resultados.length.toLocaleString('es-CL')} registros.`;
+      refs.resultsCount.textContent = `Mostrando ${findings.length.toLocaleString('es-CL')} de ${state.findings.length.toLocaleString('es-CL')} hallazgos.`;
     }
 
-    function renderResultados() {
-      renderResumen();
+    function renderResults() {
+      renderSummaries();
       renderTable();
       refs.resultsSection.classList.remove('hidden');
     }
 
-    function exportarExcel() {
-      const resultadosFiltrados = getResultadosFiltrados();
-      const headers = [
-        'Estado', 'RUT', 'Nombre', 'Empresa', 'Sede',
-        'Estado Empleado', 'Caja Credito $', 'Rex Credito $',
-        'Caja Ahorro $', 'Rex Ahorro $', 'Motivo'
-      ];
+    function exportResults() {
+      const findings = getFilteredFindings();
+      const findingsSheet = XLSX.utils.json_to_sheet(findings.map((item) => ({
+        Severidad: severityLabel(item.severity),
+        Regla: item.ruleTitle,
+        RUT: item.rut,
+        Nombre: item.name,
+        Empresa: item.company,
+        Detalle: item.detail,
+        Libro: item.bookValue,
+        Externo: item.externalValue,
+        Referencia: item.reference
+      })));
 
-      const filas = resultadosFiltrados.map((item) => [
-        item.estado,
-        item.rut,
-        item.nombre,
-        item.empresa,
-        item.sede,
-        item.estadoEmpleado,
-        item.montoCajaCredito,
-        item.montoRexCredito,
-        item.montoCajaAhorro,
-        item.montoRexAhorro,
-        item.motivo
-      ]);
+      const summarySheet = XLSX.utils.json_to_sheet(state.summaries.map((item) => ({
+        Regla: item.title,
+        Estado: item.status,
+        'Universo revisado': item.reviewed,
+        Hallazgos: item.findingCount,
+        Nota: item.note
+      })));
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...filas]);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Resultado Auditoria');
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumen');
+      XLSX.utils.book_append_sheet(workbook, findingsSheet, 'Hallazgos');
 
-      const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const nombreArchivo = `Auditoria_CajaComp_${state.empresa}_${fecha}.xlsx`;
-      XLSX.writeFile(wb, nombreArchivo);
+      const groupName = currentGroupConfig().label.replace(/\s+/g, '_');
+      const month = state.auditMonth ? `${state.auditMonth.year}-${String(state.auditMonth.month).padStart(2, '0')}` : 'sin-periodo';
+      XLSX.writeFile(workbook, `AUDITATOR_${groupName}_${month}.xlsx`);
     }
 
-    async function ejecutarAuditoria() {
-      ocultarBanner();
-      setExecuting(true);
-
-      try {
-        const [wbCredito, wbAhorro, wbRex, wbMaestro] = await Promise.all([
-          readWorkbook(state.files.credito.file),
-          readWorkbook(state.files.ahorro.file),
-          readWorkbook(state.files.rex.file),
-          readWorkbook(state.files.maestro.file)
-        ]);
-
-        const mapaCredito = parseCredito(sheetToRows(wbCredito));
-        const mapaAhorro = parseAhorro(sheetToRows(wbAhorro));
-        const mapaRex = parseRex(sheetToRows(wbRex));
-        const mapaMaestro = parseMaestro(sheetToRows(wbMaestro));
-
-        state.resultados = construirResultados(mapaCredito, mapaAhorro, mapaRex, mapaMaestro);
-        state.filtroActual = 'all';
-        setFilterButtonState();
-        renderResultados();
-        mostrarBanner('success', `Auditoria completada con ${state.resultados.length.toLocaleString('es-CL')} registros procesados.`);
-      } catch (error) {
-        console.error(error);
-        mostrarBanner('error', 'No fue posible procesar uno o mas archivos. Revisa la estructura de los Excel y vuelve a intentarlo.');
-      } finally {
-        setExecuting(false);
-      }
-    }
-
-    function isValidXlsx(file) {
-      return file && /\.xlsx$/i.test(file.name);
-    }
-
-    async function handleFileSelection(key, file) {
-      if (!file) return;
-
-      if (!isValidXlsx(file)) {
-        state.files[key] = { error: 'Solo se aceptan archivos .xlsx' };
+    function clearFile(key) {
+      if (FILE_CONFIG[key].multiple) {
+        state.files[key] = [];
       } else {
-        state.files[key] = { file };
+        state.files[key] = null;
       }
 
-      refs.resultsSection.classList.add('hidden');
-      ocultarBanner();
+      const { input } = getDropzoneElements(key);
+      input.value = '';
       setDropzoneState(key);
+    }
 
-      // Si es el Detalle Rex, detectar empresas y poblar dropdown
-      if (key === 'rex' && state.files.rex && state.files.rex.file) {
+    function validateFiles(key, files) {
+      const config = FILE_CONFIG[key];
+      const list = Array.from(files || []);
+      if (!list.length) return null;
+      const invalid = list.find((file) => !config.accept.test(file.name));
+      if (invalid) return config.error;
+      return null;
+    }
+
+    async function handleFileSelection(key, fileList) {
+      const config = FILE_CONFIG[key];
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      const error = validateFiles(key, files);
+      if (error) {
+        state.files[key] = { error };
+        setDropzoneState(key);
+        updateRunState();
+        return;
+      }
+
+      if (config.multiple) {
+        state.files[key] = files;
+      } else {
+        state.files[key] = { file: files[0] };
+      }
+
+      if (key === 'detalle') {
         try {
-          const wb = await readWorkbook(state.files.rex.file);
-          const rows = sheetToRows(wb);
-          const empresas = detectarEmpresasDeRex(rows);
-          poblarDropdownEmpresas(empresas);
-          // Resetear empresa seleccionada
-          state.empresa = '';
-          updateRunState();
-        } catch (e) {
-          console.warn('No se pudo detectar empresas del Rex:', e);
+          const workbook = await readWorkbook(state.files.detalle.file);
+          const { auditMonth } = parseDetalle(workbook);
+          state.auditMonth = auditMonth;
+          refs.auditMonthPill.textContent = monthLabel(auditMonth);
+        } catch (errorRead) {
+          console.error(errorRead);
         }
       }
 
+      hideBanner();
+      refs.resultsSection.classList.add('hidden');
+      setDropzoneState(key);
       updateRunState();
     }
 
@@ -912,8 +1634,7 @@
         zone.addEventListener('click', () => input.click());
 
         input.addEventListener('change', (event) => {
-          const [file] = event.target.files || [];
-          handleFileSelection(key, file);
+          handleFileSelection(key, event.target.files);
         });
 
         zone.addEventListener('dragover', (event) => {
@@ -928,40 +1649,96 @@
         zone.addEventListener('drop', (event) => {
           event.preventDefault();
           zone.classList.remove('dropzone-active');
-          const [file] = event.dataTransfer.files || [];
-          handleFileSelection(key, file);
+          handleFileSelection(key, event.dataTransfer.files);
         });
       });
     }
 
-    refs.empresaSelect.addEventListener('change', (event) => {
-      state.empresa = event.target.value; // nombre lowercase exacto
-      // No resetear archivos al cambiar empresa (ya están cargados)
-      state.resultados = [];
-      refs.resultsSection.classList.add('hidden');
-      ocultarBanner();
+    async function runAudit() {
+      hideBanner();
+      setExecuting(true, 'Leyendo archivos base');
+
+      try {
+        const [detalleWb, maestroWb, sindicatoWb] = await Promise.all([
+          readWorkbook(state.files.detalle.file),
+          readWorkbook(state.files.maestro.file),
+          readWorkbook(state.files.sindicato.file)
+        ]);
+
+        setProcessingLabel('Parseando libro acumulado');
+        const detalleParsed = parseDetalle(detalleWb);
+        const maestroMap = parseMaestro(maestroWb);
+        const { detailByRut, contextForRut } = buildEmployeeMaps(detalleParsed.records, maestroMap);
+        const validRuts = new Set([
+          ...detailByRut.keys(),
+          ...maestroMap.keys()
+        ]);
+        const nominaMap = parseSindicatoWorkbook(sindicatoWb, validRuts);
+
+        state.auditMonth = detalleParsed.auditMonth;
+        state.companyCount = new Set(detalleParsed.records.map((record) => normalizeText(record.company))).size;
+        state.fonasaDocuments = state.files.fonasa.length;
+
+        const ruleResults = [];
+        ruleResults.push(runRuleDays(detalleParsed.records, contextForRut));
+        ruleResults.push(runRuleMovilizacion(detalleParsed.records, contextForRut));
+        ruleResults.push(runRuleSobregiro(detalleParsed.records, contextForRut));
+        ruleResults.push(runRuleCaja25(detalleParsed.records, contextForRut));
+        ruleResults.push(runRuleSindicatos(detalleParsed.records, maestroMap, nominaMap, contextForRut));
+        ruleResults.push(runRuleRenovaciones(maestroMap, detalleParsed.auditMonth, contextForRut));
+
+        setProcessingLabel('Conciliando Fonasa con OCR local');
+        const fonasaParsed = await parseFonasaDocuments(state.files.fonasa);
+        ruleResults.push(runRuleFonasa(detalleParsed.records, contextForRut, fonasaParsed));
+
+        state.findings = ruleResults.flatMap((result) => result.findings);
+        state.summaries = ruleResults.map(summarizeRule);
+        state.filter = 'all';
+        setFilterButtons();
+        renderResults();
+
+        const findingsCount = state.findings.length.toLocaleString('es-CL');
+        showBanner('success', `Auditoria completada. Se detectaron ${findingsCount} hallazgos en ${RULE_DEFINITIONS.length} reglas revisadas.`);
+      } catch (error) {
+        console.error(error);
+        showBanner('error', 'No fue posible completar la auditoria. Revisa la estructura de los archivos cargados y vuelve a intentarlo.');
+      } finally {
+        setExecuting(false);
+      }
+    }
+
+    refs.groupSelect.addEventListener('change', (event) => {
+      state.group = event.target.value;
+      renderGroupPanel();
+      resetResults();
+      hideBanner();
       updateRunState();
     });
 
     refs.runButton.addEventListener('click', () => {
-      if (!refs.runButton.disabled) {
-        ejecutarAuditoria();
-      }
+      if (!refs.runButton.disabled) runAudit();
     });
 
-    refs.exportBtn.addEventListener('click', exportarExcel);
+    refs.exportBtn.addEventListener('click', exportResults);
 
     document.querySelectorAll('.filter-btn').forEach((button) => {
       button.addEventListener('click', () => {
-        state.filtroActual = button.dataset.filter;
-        setFilterButtonState();
+        state.filter = button.dataset.filter;
+        setFilterButtons();
         renderTable();
       });
     });
 
+    populateGroupSelect();
+    renderGroupPanel();
     setupDropzones();
-    FILE_KEYS.forEach(setDropzoneState);
-    setFilterButtonState();
+    Object.keys(FILE_CONFIG).forEach((key) => {
+      if (FILE_CONFIG[key].multiple) {
+        state.files[key] = [];
+      }
+      setDropzoneState(key);
+    });
+    resetResults();
     updateRunState();
   </script>
 </body>
