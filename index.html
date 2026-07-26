@@ -9,35 +9,15 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
-          },
+          fontFamily: { sans: ['Inter','sans-serif'], mono: ['JetBrains Mono','monospace'] },
           colors: {
-            surface:     '#F8FAFC',
-            'surface-0': '#FFFFFF',
-            'surface-1': '#F1F5F9',
-            border:      '#E2E8F0',
-            ink:         '#0F172A',
-            'ink-2':     '#64748B',
-            'ink-3':     '#94A3B8',
-            primary:     '#2563EB',
-            'primary-dk':'#1D4ED8',
-            'primary-lt':'#EFF6FF',
-            ok:          '#16A34A',
-            'ok-lt':     '#DCFCE7',
-            warn:        '#D97706',
-            'warn-lt':   '#FEF3C7',
-            danger:      '#DC2626',
-            'danger-lt': '#FEE2E2',
-            header:      '#0F172A'
-          },
-          fontSize: {
-            'caps': ['11px', { lineHeight: '16px', letterSpacing: '0.06em', fontWeight: '700' }]
-          },
-          boxShadow: {
-            card: '0 1px 3px rgba(0,0,0,0.08)',
-            'card-md': '0 4px 12px rgba(0,0,0,0.08)'
+            ink: '#0F172A', ink2: '#64748B', ink3: '#94A3B8',
+            surface: '#F8FAFC', card: '#FFFFFF', border: '#E2E8F0',
+            primary: '#2563EB', 'primary-dk': '#1D4ED8', 'primary-lt': '#EFF6FF',
+            ok: '#16A34A', 'ok-lt': '#DCFCE7', 'ok-bg': '#F0FDF4',
+            warn: '#D97706', 'warn-lt': '#FEF3C7', 'warn-bg': '#FFFBEB',
+            danger: '#DC2626', 'danger-lt': '#FEE2E2', 'danger-bg': '#FFF5F5',
+            header: '#0F172A', sidebar: '#0F172A'
           }
         }
       }
@@ -48,349 +28,400 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { background: #F8FAFC; color: #0F172A; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+    *,*::before,*::after{box-sizing:border-box;}
+    body{background:#F8FAFC;color:#0F172A;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;margin:0;}
+    ::-webkit-scrollbar{width:5px;height:5px;}
+    ::-webkit-scrollbar-track{background:#F1F5F9;}
+    ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px;}
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #F1F5F9; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    /* Layout */
+    .app-shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:52px 1fr;min-height:100vh;}
+    .app-header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#0F172A;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:50;}
+    .app-sidebar{background:#0F172A;border-right:1px solid rgba(255,255,255,0.07);padding:20px 0;display:flex;flex-direction:column;overflow-y:auto;}
+    .app-content{background:#F8FAFC;overflow-y:auto;padding:24px;}
 
-    /* Dropzones */
-    .dropzone { transition: border-color 0.15s, background 0.15s; }
-    .dropzone-active { border-color: #2563EB !important; background: #EFF6FF !important; }
-    .dropzone-error  { border-color: #DC2626 !important; background: #FEF2F2 !important; }
-
-    /* Badges de severidad */
-    .badge-alta  { background: #FEE2E2; color: #DC2626; }
-    .badge-media { background: #FEF3C7; color: #D97706; }
-    .badge-baja  { background: #DBEAFE; color: #2563EB; }
-
-    /* Filas de tabla por severidad */
-    .row-alta  { background: #FFF5F5; }
-    .row-media { background: #FFFBEB; }
-    .row-baja  { background: #FFFFFF; }
-    .row-alta:hover  { background: #FEE2E2; }
-    .row-media:hover { background: #FEF3C7; }
-    .row-baja:hover  { background: #F8FAFC; }
+    /* Sidebar nav */
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;text-decoration:none;}
+    .nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);}
+    .nav-item.active{background:rgba(37,99,235,0.15);color:#fff;border-left-color:#2563EB;}
+    .nav-icon{font-size:15px;width:18px;text-align:center;}
+    .nav-section{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);padding:16px 20px 6px;}
 
     /* Cards */
-    .card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .card-interactive { cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
-    .card-interactive:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #CBD5E1; }
+    .card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+    .card-interactive{cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;}
+    .card-interactive:hover{box-shadow:0 4px 12px rgba(0,0,0,0.1);border-color:#CBD5E1;}
 
-    /* Botones */
-    .btn-primary {
-      background: #2563EB; color: #fff; border-radius: 8px; border: none;
-      font-weight: 600; font-size: 14px; padding: 10px 20px;
-      cursor: pointer; transition: background 0.15s, box-shadow 0.15s;
-      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-    }
-    .btn-primary:hover:not(:disabled) { background: #1D4ED8; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
-    .btn-primary:disabled { background: #E2E8F0; color: #94A3B8; cursor: not-allowed; box-shadow: none; }
+    /* Buttons */
+    .btn-primary{background:#2563EB;color:#fff;border-radius:8px;border:none;font-weight:600;font-size:13px;padding:9px 18px;cursor:pointer;transition:background 0.15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+    .btn-primary:hover:not(:disabled){background:#1D4ED8;}
+    .btn-primary:disabled{background:#E2E8F0;color:#94A3B8;cursor:not-allowed;}
+    .btn-secondary{background:#FFF;color:#0F172A;border:1px solid #E2E8F0;border-radius:8px;font-weight:500;font-size:12px;padding:7px 13px;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+    .btn-secondary:hover{background:#F8FAFC;border-color:#CBD5E1;}
+    .btn-secondary.active{background:#2563EB;border-color:#2563EB;color:#fff;}
 
-    .btn-secondary {
-      background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0; border-radius: 8px;
-      font-weight: 500; font-size: 13px; padding: 8px 14px;
-      cursor: pointer; transition: all 0.15s;
-      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    }
-    .btn-secondary:hover { background: #F8FAFC; border-color: #CBD5E1; }
-    .btn-secondary.active { background: #2563EB; border-color: #2563EB; color: #fff; }
-
-    .btn-ghost-white {
-      background: transparent; color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
-      font-weight: 500; font-size: 13px; padding: 7px 14px;
-      cursor: pointer; transition: all 0.15s;
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .btn-ghost-white:hover { background: rgba(255,255,255,0.1); color: #fff; }
-
-    /* Select */
-    .select-light {
-      background: #FFFFFF; border: 1px solid #E2E8F0; color: #0F172A;
-      border-radius: 8px; padding: 9px 12px; font-size: 14px;
-      font-family: 'Inter', sans-serif; outline: none; width: 100%;
-      cursor: pointer; transition: border-color 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .select-light:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    /* Dropzones */
+    .dropzone{border:2px dashed #E2E8F0;border-radius:12px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:130px;cursor:pointer;background:#FAFBFF;transition:border-color 0.15s,background 0.15s;}
+    .dropzone:hover{border-color:#2563EB;background:#EFF6FF;}
+    .dropzone-active{border-color:#2563EB !important;background:#EFF6FF !important;}
+    .dropzone-error{border-color:#DC2626 !important;background:#FFF5F5 !important;}
 
     /* Pills */
-    .pill {
-      display: inline-flex; align-items: center;
-      padding: 2px 10px; border-radius: 999px; font-size: 11px;
-      font-weight: 600; letter-spacing: 0.03em;
-    }
+    .pill{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;}
+    .pill-alta{background:#FEE2E2;color:#DC2626;}
+    .pill-media{background:#FEF3C7;color:#D97706;}
+    .pill-baja{background:#DBEAFE;color:#2563EB;}
+    .pill-ok{background:#DCFCE7;color:#16A34A;}
+    .pill-alert{background:#FEE2E2;color:#DC2626;}
 
-    /* KPI numbers */
-    .kpi-num { font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+    /* KPI cards */
+    .kpi-card{background:#FFF;border:1px solid #E2E8F0;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+    .kpi-num{font-size:32px;font-weight:700;line-height:1;letter-spacing:-0.02em;}
 
-    /* Tabla */
-    thead th { position: sticky; top: 0; z-index: 2; background: #F1F5F9; }
-    tbody tr { border-bottom: 1px solid #F1F5F9; transition: background 0.1s; }
+    /* Run rows */
+    .run-row{display:grid;grid-template-columns:140px 120px 1fr 100px 160px 80px 100px;align-items:center;padding:14px 20px;border-bottom:1px solid #F1F5F9;font-size:13px;gap:12px;transition:background 0.1s;cursor:pointer;}
+    .run-row:hover{background:#F8FAFC;}
+    .run-row.header{background:#F1F5F9;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748B;cursor:default;border-radius:10px 10px 0 0;}
+    .run-row.header:hover{background:#F1F5F9;}
 
-    /* Step numbers */
-    .step-badge {
-      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
-      background: #E2E8F0; color: #64748B;
-      font-size: 10px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .step-badge.loaded { background: #DCFCE7; color: #16A34A; }
+    /* Tabla hallazgos */
+    .findings-table{width:100%;min-width:1000px;border-collapse:collapse;font-size:12px;}
+    .findings-table thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748B;background:#F1F5F9;border-bottom:1px solid #E2E8F0;position:sticky;top:0;z-index:2;white-space:nowrap;}
+    .findings-table tbody tr{border-bottom:1px solid #F1F5F9;transition:background 0.1s;}
+    .findings-table tbody tr:hover{filter:brightness(0.97);}
+    .findings-table td{padding:8px 12px;vertical-align:middle;}
+    .tr-alta{background:#FFF5F5;}
+    .tr-media{background:#FFFBEB;}
+    .tr-baja{background:#FFFFFF;}
+    .tr-rule-break td:first-child{border-top:2px solid #E2E8F0;}
 
-    /* Divider */
-    .divider { height: 1px; background: #E2E8F0; }
+    /* Rule summary cards */
+    .rule-card{border-radius:10px;border:1px solid;padding:14px;border-left-width:4px;cursor:pointer;transition:box-shadow 0.15s;}
+    .rule-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+    .rule-card.ok{border-color:#DCFCE7;background:#F0FDF4;border-left-color:#16A34A;}
+    .rule-card.alert{border-color:#FEE2E2;background:#FFF5F5;border-left-color:#DC2626;}
 
-    /* Status dot */
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #16A34A; animation: pulse 2s infinite; flex-shrink:0; }
+    /* Tabs */
+    .tab-bar{display:flex;gap:4px;border-bottom:1px solid #E2E8F0;margin-bottom:20px;}
+    .tab{padding:8px 14px;font-size:13px;font-weight:500;color:#64748B;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.15s;}
+    .tab:hover{color:#0F172A;}
+    .tab.active{color:#2563EB;border-bottom-color:#2563EB;font-weight:600;}
+
+    /* Misc */
+    .divider{height:1px;background:#E2E8F0;margin:16px 0;}
+    .select-light{background:#FFF;border:1px solid #E2E8F0;color:#0F172A;border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100%;cursor:pointer;transition:border-color 0.15s;}
+    .select-light:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,0.1);}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;}
+    .dot-ok{background:#16A34A;animation:pulse 2s infinite;}
+    .dot-warn{background:#D97706;}
+    .dot-run{background:#2563EB;animation:pulse 1s infinite;}
+    .empty-state{text-align:center;padding:60px 20px;color:#94A3B8;}
+    .empty-state .icon{font-size:40px;margin-bottom:16px;}
+    .badge-count{background:#EFF6FF;color:#2563EB;border-radius:999px;font-size:11px;font-weight:700;padding:1px 8px;min-width:22px;text-align:center;}
+    .badge-count.red{background:#FEE2E2;color:#DC2626;}
+
+    /* Hidden */
+    [hidden]{display:none!important;}
+    .screen{display:none;}
+    .screen.active{display:block;}
   </style>
 </head>
-<body class="min-h-screen">
+<body>
+<div class="app-shell">
 
-  <!-- HEADER -->
-  <header style="background:#161B22; border-bottom:1px solid #30363D; position:sticky; top:0; z-index:50;">
-    <div class="mx-auto flex w-full max-w-[1480px] items-center justify-between px-6 py-3">
-      <div class="flex items-center gap-3">
-        <div style="width:32px;height:32px;border-radius:8px;background:#2F81F7;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;letter-spacing:0.02em;">AU</div>
-        <div>
-          <span style="font-weight:700;font-size:16px;color:#F0F6FC;letter-spacing:-0.01em;">AUDITATOR</span>
-          <span style="font-size:12px;color:#8B949E;margin-left:8px;">Reglas de nómina</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2">
-          <span style="width:7px;height:7px;border-radius:50%;background:#3FB950;display:inline-block;"></span>
-          <span id="status-pill" style="font-size:12px;color:#8B949E;">Configurando auditoría</span>
-        </div>
-        <div style="height:16px;width:1px;background:#30363D;"></div>
-        <span style="font-size:12px;color:#8B949E;">Mes detectado: <span id="audit-month-pill" style="color:#C9D1D9;font-weight:500;">—</span></span>
-      </div>
+  <!-- ═══ HEADER ═══ -->
+  <header class="app-header">
+    <div class="flex items-center gap-3">
+      <div style="width:30px;height:30px;background:#2563EB;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;letter-spacing:0.02em;">AU</div>
+      <span style="font-weight:700;font-size:15px;color:#fff;letter-spacing:-0.01em;">AUDITATOR</span>
+      <span style="width:1px;height:14px;background:rgba(255,255,255,0.15);"></span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.4);">Nóminas NPR</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="dot dot-ok"></span>
+      <span id="status-pill" style="font-size:12px;color:rgba(255,255,255,0.6);">Listo</span>
+      <span style="width:1px;height:14px;background:rgba(255,255,255,0.15);"></span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.4);">Periodo: <span id="audit-month-pill" style="color:rgba(255,255,255,0.75);font-weight:500;">—</span></span>
     </div>
   </header>
 
-  <main class="mx-auto w-full max-w-[1480px] px-6 py-6">
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="app-sidebar">
+    <p class="nav-section">Principal</p>
+    <a class="nav-item" id="nav-new" onclick="showScreen('new')">
+      <span class="nav-icon">＋</span> Nueva auditoría
+    </a>
+    <a class="nav-item active" id="nav-runs" onclick="showScreen('runs')">
+      <span class="nav-icon">📋</span> Audit Runs
+      <span id="runs-badge" class="badge-count ml-auto">0</span>
+    </a>
+    <p class="nav-section" style="margin-top:8px;">Sistema</p>
+    <a class="nav-item" id="nav-rules" onclick="showScreen('rules')">
+      <span class="nav-icon">⚖️</span> Reglas
+    </a>
+    <div style="margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,0.07);">
+      <p style="font-size:10px;color:rgba(255,255,255,0.2);line-height:1.5;">v2.0 · Grupo Crux<br>Procesamiento local</p>
+    </div>
+  </aside>
 
-    <!-- CONFIGURACIÓN -->
-    <div class="card mb-5" style="padding:0;overflow:hidden;">
+  <!-- ═══ CONTENT ═══ -->
+  <div class="app-content">
 
-      <!-- Barra de pasos -->
-      <div style="background:#0D1117;border-bottom:1px solid #30363D;padding:14px 24px;">
-        <div class="flex items-center gap-6">
-          <div class="flex items-center gap-2">
-            <div class="step-num" id="step1-num">1</div>
-            <span style="font-size:13px;font-weight:600;color:#C9D1D9;">Grupo</span>
+    <!-- ══════════════════════════════════════
+         SCREEN: NUEVA AUDITORÍA
+    ══════════════════════════════════════ -->
+    <div class="screen" id="screen-new">
+      <div style="max-width:800px;margin:0 auto;">
+        <div class="mb-6">
+          <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Nueva auditoría</h1>
+          <p style="font-size:13px;color:#64748B;">Carga los 4 insumos y ejecuta las 7 reglas de Grupo Crux.</p>
+        </div>
+
+        <!-- Selector de grupo -->
+        <div class="card p-5 mb-4">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:10px;">Grupo de empresas</p>
+          <select id="group-select" class="select-light" style="max-width:320px;"></select>
+          <div id="group-company-list" class="flex flex-wrap gap-2 mt-3"></div>
+          <p id="group-note" style="font-size:11px;color:#94A3B8;margin-top:8px;"></p>
+        </div>
+
+        <!-- Dropzones 2×2 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+
+          <div class="dropzone" data-file-key="detalle">
+            <input id="file-detalle" type="file" accept=".xlsx" class="sr-only">
+            <div class="pointer-events-none w-full">
+              <div style="font-size:24px;margin-bottom:8px;">📘</div>
+              <p style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:3px;">Detalle proceso</p>
+              <p style="font-size:11px;color:#94A3B8;margin-bottom:8px;">Libro acumulado .xlsx</p>
+              <p style="font-size:10px;color:#CBD5E1;letter-spacing:0.05em;text-transform:uppercase;">Arrastra o haz clic</p>
+            </div>
+            <div class="file-meta hidden w-full mt-3"></div>
+            <div class="file-error hidden w-full mt-2" style="font-size:11px;color:#DC2626;"></div>
           </div>
-          <div style="flex:1;height:1px;background:#30363D;max-width:40px;"></div>
-          <div class="flex items-center gap-2">
-            <div class="step-num" id="step2-num">2</div>
-            <span style="font-size:13px;font-weight:600;color:#C9D1D9;">Insumos</span>
+
+          <div class="dropzone" data-file-key="maestro">
+            <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
+            <div class="pointer-events-none w-full">
+              <div style="font-size:24px;margin-bottom:8px;">🧾</div>
+              <p style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:3px;">Maestro Básico</p>
+              <p style="font-size:11px;color:#94A3B8;margin-bottom:8px;">Contratos y renovaciones</p>
+              <p style="font-size:10px;color:#CBD5E1;letter-spacing:0.05em;text-transform:uppercase;">Solo .xlsx</p>
+            </div>
+            <div class="file-meta hidden w-full mt-3"></div>
+            <div class="file-error hidden w-full mt-2" style="font-size:11px;color:#DC2626;"></div>
           </div>
-          <div style="flex:1;height:1px;background:#30363D;max-width:40px;"></div>
-          <div class="flex items-center gap-2">
-            <div class="step-num" id="step3-num">3</div>
-            <span style="font-size:13px;font-weight:600;color:#C9D1D9;">Ejecutar</span>
+
+          <div class="dropzone" data-file-key="sindicato">
+            <input id="file-sindicato" type="file" accept=".xlsx" class="sr-only">
+            <div class="pointer-events-none w-full">
+              <div style="font-size:24px;margin-bottom:8px;">🤝</div>
+              <p style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:3px;">Nómina sindical</p>
+              <p style="font-size:11px;color:#94A3B8;margin-bottom:8px;">Cuotas + correcciones</p>
+              <p style="font-size:10px;color:#CBD5E1;letter-spacing:0.05em;text-transform:uppercase;">Solo .xlsx</p>
+            </div>
+            <div class="file-meta hidden w-full mt-3"></div>
+            <div class="file-error hidden w-full mt-2" style="font-size:11px;color:#DC2626;"></div>
           </div>
-          <div class="ml-auto">
-            <span style="font-size:12px;color:#8B949E;">Cobertura: <span style="color:#2F81F7;font-weight:600;">Grupo Crux habilitado</span></span>
+
+          <div class="dropzone" data-file-key="fonasa">
+            <input id="file-fonasa" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple class="sr-only">
+            <div class="pointer-events-none w-full">
+              <div style="font-size:24px;margin-bottom:8px;">🏥</div>
+              <p style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:3px;">Préstamos Fonasa</p>
+              <p style="font-size:11px;color:#94A3B8;margin-bottom:8px;">PDF o imagen — OCR local</p>
+              <p style="font-size:10px;color:#CBD5E1;letter-spacing:0.05em;text-transform:uppercase;">Múltiples archivos</p>
+            </div>
+            <div class="file-meta hidden w-full mt-3"></div>
+            <div class="file-error hidden w-full mt-2" style="font-size:11px;color:#DC2626;"></div>
           </div>
+
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex items-center justify-between">
+          <p id="run-help" style="font-size:12px;color:#94A3B8;">Carga los 4 insumos para ejecutar.</p>
+          <div class="flex gap-3">
+            <button id="demo-btn" class="btn-secondary" onclick="loadDemo()">⚡ Datos de prueba</button>
+            <button id="run-audit-btn" class="btn-primary" disabled>
+              <span id="run-icon">▶</span>
+              <span id="run-label">Ejecutar auditoría</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Banner -->
+        <div id="feedback-banner" class="hidden mt-4" style="border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;"></div>
+
+        <!-- Reglas ocultas (para compatibilidad JS) -->
+        <ul id="rule-list" class="hidden"></ul>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SCREEN: AUDIT RUNS
+    ══════════════════════════════════════ -->
+    <div class="screen active" id="screen-runs">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Audit Runs</h1>
+          <p style="font-size:13px;color:#64748B;">Historial de auditorías ejecutadas en este dispositivo.</p>
+        </div>
+        <button class="btn-primary" onclick="showScreen('new')">＋ Nueva auditoría</button>
+      </div>
+
+      <!-- KPI globales -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" id="global-kpis">
+        <div class="kpi-card" style="border-left:4px solid #0F172A;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:10px;">Runs totales</p>
+          <p id="kpi-total-runs" class="kpi-num" style="color:#0F172A;margin-bottom:6px;">0</p>
+          <p style="font-size:11px;color:#94A3B8;">Auditorías guardadas</p>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #DC2626;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#DC2626;margin-bottom:10px;">Hallazgos último run</p>
+          <p id="kpi-last-findings" class="kpi-num" style="color:#DC2626;margin-bottom:6px;">—</p>
+          <p style="font-size:11px;color:#94A3B8;">Observaciones detectadas</p>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #D97706;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#D97706;margin-bottom:10px;">Reglas con alerta</p>
+          <p id="kpi-last-rules" class="kpi-num" style="color:#D97706;margin-bottom:6px;">—</p>
+          <p style="font-size:11px;color:#94A3B8;">En el último run</p>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #16A34A;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#16A34A;margin-bottom:10px;">Empresas último run</p>
+          <p id="kpi-last-companies" class="kpi-num" style="color:#16A34A;margin-bottom:6px;">—</p>
+          <p style="font-size:11px;color:#94A3B8;">Con movimientos</p>
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:280px 1fr;min-height:320px;">
-
-        <!-- PANEL IZQUIERDO: Grupo -->
-        <div style="border-right:1px solid #30363D;padding:20px;background:#0D1117;">
-          <p style="font-size:11px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:10px;">Grupo de empresas</p>
-          <select id="group-select" class="select-dark mb-4"></select>
-
-          <div id="group-card" style="border-radius:8px;background:#21262D;border:1px solid #30363D;padding:14px;">
-            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:8px;">Empresas</p>
-            <div id="group-company-list" class="flex flex-col gap-1"></div>
-            <p id="group-note" style="margin-top:10px;font-size:11px;color:#8B949E;line-height:1.5;"></p>
-          </div>
-
-          <div style="margin-top:14px;">
-            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:8px;">Reglas activas</p>
-            <ul id="rule-list" class="flex flex-col gap-1"></ul>
-          </div>
+      <!-- Lista de runs -->
+      <div class="card" style="overflow:hidden;">
+        <div class="run-row header">
+          <span>Run ID</span>
+          <span>Fecha</span>
+          <span>Grupo / Periodo</span>
+          <span>Empresas</span>
+          <span style="text-align:center;">Hallazgos por regla</span>
+          <span>Total</span>
+          <span>Estado</span>
         </div>
-
-        <!-- PANEL DERECHO: Insumos + Ejecutar -->
-        <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
-
-          <!-- Grid de 4 zonas -->
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1;">
-
-            <div class="dropzone card card-hover" data-file-key="detalle"
-              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
-              <input id="file-detalle" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none w-full">
-                <div style="font-size:22px;margin-bottom:10px;">📘</div>
-                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Detalle proceso</p>
-                <p style="font-size:11px;color:#8B949E;">Libro acumulado .xlsx</p>
-                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Arrastra o clic</p>
-              </div>
-              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
-              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
-            </div>
-
-            <div class="dropzone card card-hover" data-file-key="maestro"
-              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
-              <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none w-full">
-                <div style="font-size:22px;margin-bottom:10px;">🧾</div>
-                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Maestro Básico</p>
-                <p style="font-size:11px;color:#8B949E;">Contratos y renovaciones</p>
-                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Solo .xlsx</p>
-              </div>
-              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
-              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
-            </div>
-
-            <div class="dropzone card card-hover" data-file-key="sindicato"
-              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
-              <input id="file-sindicato" type="file" accept=".xlsx" class="sr-only">
-              <div class="pointer-events-none w-full">
-                <div style="font-size:22px;margin-bottom:10px;">🤝</div>
-                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Nómina sindical</p>
-                <p style="font-size:11px;color:#8B949E;">Cuotas + correcciones</p>
-                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Solo .xlsx</p>
-              </div>
-              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
-              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
-            </div>
-
-            <div class="dropzone card card-hover" data-file-key="fonasa"
-              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
-              <input id="file-fonasa" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple class="sr-only">
-              <div class="pointer-events-none w-full">
-                <div style="font-size:22px;margin-bottom:10px;">🏥</div>
-                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Préstamos Fonasa</p>
-                <p style="font-size:11px;color:#8B949E;">PDF o imagen — OCR local</p>
-                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Múltiples archivos</p>
-              </div>
-              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
-              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
-            </div>
-
+        <div id="runs-list">
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <p style="font-size:14px;font-weight:600;color:#64748B;margin-bottom:6px;">Sin auditorías aún</p>
+            <p style="font-size:12px;">Ejecuta tu primera auditoría desde <strong>Nueva auditoría</strong>.</p>
           </div>
-
-          <!-- Botón ejecutar -->
-          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:4px;flex-wrap:wrap;gap:10px;">
-            <p id="run-help" style="font-size:12px;color:#8B949E;">Carga los 4 insumos para habilitar la ejecución.</p>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button id="demo-btn" class="btn-ghost" onclick="loadDemo()" style="font-size:12px;color:#8B949E;">
-                ⚡ Cargar datos de prueba
-              </button>
-              <button id="run-audit-btn" class="btn-primary" disabled style="min-width:220px;justify-content:center;">
-                <span id="run-icon">▶</span>
-                <span id="run-label">Ejecutar auditoría</span>
-              </button>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
 
-    <!-- BANNER -->
-    <div id="feedback-banner" class="hidden mb-5" style="border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid transparent;"></div>
-
-    <!-- RESULTADOS -->
-    <section id="results-section" class="hidden" style="display:none;flex-direction:column;gap:16px;">
-
-      <!-- KPIs -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-
-        <div class="card" style="padding:20px;">
-          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:12px;">Hallazgos totales</p>
-          <p id="summary-findings" class="kpi-num" style="color:#F0F6FC;">0</p>
-          <p style="font-size:11px;color:#8B949E;margin-top:8px;">Observaciones en reglas activas</p>
+    <!-- ══════════════════════════════════════
+         SCREEN: DETALLE DE UN RUN
+    ══════════════════════════════════════ -->
+    <div class="screen" id="screen-run-detail">
+      <!-- Header del run -->
+      <div class="flex items-center gap-3 mb-6">
+        <button class="btn-secondary" onclick="showScreen('runs')" style="padding:6px 12px;">← Volver</button>
+        <div style="flex:1;">
+          <h1 style="font-size:20px;font-weight:700;color:#0F172A;margin-bottom:2px;" id="detail-title">Run</h1>
+          <p style="font-size:12px;color:#64748B;" id="detail-subtitle"></p>
         </div>
+        <button class="btn-secondary" id="export-btn" style="color:#2563EB;border-color:#BFDBFE;">⬇ Exportar Excel</button>
+      </div>
 
-        <div class="card" style="padding:20px;border-color:rgba(210,153,34,0.3);">
-          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#D29922;text-transform:uppercase;margin-bottom:12px;">Reglas con alerta</p>
-          <p id="summary-rules-alert" class="kpi-num" style="color:#D29922;">0</p>
-          <p style="font-size:11px;color:#8B949E;margin-top:8px;">De 7 reglas revisadas</p>
+      <!-- KPIs del run -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div class="kpi-card" style="border-left:4px solid #0F172A;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:10px;">Hallazgos</p>
+          <p id="summary-findings" class="kpi-num" style="color:#0F172A;margin-bottom:6px;">0</p>
+          <p style="font-size:11px;color:#94A3B8;">Observaciones detectadas</p>
         </div>
-
-        <div class="card" style="padding:20px;border-color:rgba(63,185,80,0.3);">
-          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#3FB950;text-transform:uppercase;margin-bottom:12px;">Empresas revisadas</p>
-          <p id="summary-companies" class="kpi-num" style="color:#3FB950;">0</p>
-          <p id="summary-companies-note" style="font-size:11px;color:#8B949E;margin-top:8px;">Con movimientos en el periodo</p>
+        <div class="kpi-card" style="border-left:4px solid #DC2626;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#DC2626;margin-bottom:10px;">Reglas con alerta</p>
+          <p id="summary-rules-alert" class="kpi-num" style="color:#DC2626;margin-bottom:6px;">0</p>
+          <p style="font-size:11px;color:#94A3B8;">De 7 revisadas</p>
         </div>
-
-        <div class="card" style="padding:20px;border-color:rgba(47,129,247,0.3);">
-          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#2F81F7;text-transform:uppercase;margin-bottom:12px;">Docs Fonasa</p>
-          <p id="summary-fonasa-docs" class="kpi-num" style="color:#2F81F7;">0</p>
-          <p id="summary-fonasa-note" style="font-size:11px;color:#8B949E;margin-top:8px;">Archivos leídos con OCR</p>
+        <div class="kpi-card" style="border-left:4px solid #16A34A;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#16A34A;margin-bottom:10px;">Empresas</p>
+          <p id="summary-companies" class="kpi-num" style="color:#16A34A;margin-bottom:6px;">0</p>
+          <p id="summary-companies-note" style="font-size:11px;color:#94A3B8;">Con movimientos</p>
         </div>
-
+        <div class="kpi-card" style="border-left:4px solid #2563EB;">
+          <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#2563EB;margin-bottom:10px;">Docs Fonasa</p>
+          <p id="summary-fonasa-docs" class="kpi-num" style="color:#2563EB;margin-bottom:6px;">0</p>
+          <p id="summary-fonasa-note" style="font-size:11px;color:#94A3B8;">Leídos con OCR</p>
+        </div>
       </div>
 
       <!-- Panel ejecutivo por regla -->
-      <div class="card" style="padding:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="card p-5 mb-4">
+        <div class="flex items-center justify-between mb-4">
           <div>
-            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;">Resumen por regla</p>
-            <p style="font-size:16px;font-weight:700;color:#F0F6FC;margin-top:4px;">Panel ejecutivo</p>
+            <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px;">Resumen por regla</p>
+            <p style="font-size:15px;font-weight:700;color:#0F172A;">Panel ejecutivo · <span id="audit-month-results" style="color:#2563EB;">—</span></p>
           </div>
-          <span style="font-size:12px;color:#8B949E;">Periodo: <span id="audit-month-results" style="color:#C9D1D9;font-weight:600;">—</span></span>
+          <p style="font-size:11px;color:#94A3B8;">Clic en una regla para ver detalle</p>
         </div>
         <div id="rule-summary-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
       </div>
 
       <!-- Tabla de hallazgos -->
-      <div class="card" style="padding:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
-            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;">Detalle</p>
-            <p style="font-size:16px;font-weight:700;color:#F0F6FC;margin-top:4px;">Hallazgos auditables</p>
+            <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px;">Detalle</p>
+            <p style="font-size:15px;font-weight:700;color:#0F172A;" id="table-title">Todos los hallazgos</p>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div style="display:flex;gap:4px;">
-              <button class="btn-ghost active filter-btn" data-filter="all">Todos</button>
-              <button class="btn-ghost filter-btn" data-filter="alta">Alta</button>
-              <button class="btn-ghost filter-btn" data-filter="media">Media</button>
-              <button class="btn-ghost filter-btn" data-filter="baja">Baja</button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex gap-1" id="filter-bar">
+              <button class="btn-secondary filter-btn active" data-filter="all" style="font-size:11px;padding:5px 11px;">Todos</button>
+              <button class="btn-secondary filter-btn" data-filter="alta" style="font-size:11px;padding:5px 11px;">Alta</button>
+              <button class="btn-secondary filter-btn" data-filter="media" style="font-size:11px;padding:5px 11px;">Media</button>
+              <button class="btn-secondary filter-btn" data-filter="baja" style="font-size:11px;padding:5px 11px;">Baja</button>
             </div>
-            <div style="width:1px;height:24px;background:#30363D;"></div>
-            <button id="export-btn" class="btn-ghost" style="color:#2F81F7;border-color:#2F81F7;">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Zm-1-5.573L6.5 12.957V3.75a.75.75 0 0 1 1.5 0v9.207l4.75-4.53a.75.75 0 0 1 1.024 1.096l-6.052 5.773a.748.748 0 0 1-1.024 0L.726 9.523a.75.75 0 0 1 1.024-1.096Z"/></svg>
-              Exportar Excel
-            </button>
+            <button id="rule-export-btn" class="btn-secondary hidden" style="font-size:11px;padding:5px 11px;color:#2563EB;border-color:#BFDBFE;">⬇ Esta regla</button>
+            <button id="clear-rule-filter" class="btn-secondary hidden" style="font-size:11px;padding:5px 11px;" onclick="clearRuleFilter()">✕ Limpiar filtro</button>
           </div>
         </div>
-
-        <div style="overflow-x:auto;border-radius:8px;border:1px solid #30363D;">
-          <table style="width:100%;min-width:1200px;border-collapse:collapse;font-size:12px;">
+        <div style="overflow-x:auto;border:1px solid #E2E8F0;border-radius:10px;">
+          <table class="findings-table">
             <thead>
-              <tr style="background:#0D1117;border-bottom:1px solid #30363D;">
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Sev.</th>
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Regla</th>
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">RUT</th>
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;">Nombre</th>
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;">Empresa</th>
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;min-width:280px;">Detalle</th>
-                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Libro</th>
-                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Externo</th>
-                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;min-width:200px;">Referencia</th>
+              <tr>
+                <th>Sev.</th><th>Regla</th><th>RUT</th><th>Nombre</th><th>Empresa</th>
+                <th style="min-width:180px;">Detalle</th>
+                <th style="text-align:right;">Libro</th><th style="text-align:right;">Externo</th>
+                <th style="min-width:140px;">Referencia</th>
               </tr>
             </thead>
-            <tbody id="results-body" style="divide-y:#30363D;"></tbody>
+            <tbody id="results-body"></tbody>
           </table>
         </div>
-
-        <p id="results-count" style="margin-top:10px;font-size:11px;color:#8B949E;"></p>
+        <p id="results-count" style="margin-top:10px;font-size:11px;color:#94A3B8;"></p>
       </div>
+    </div>
 
-    </section>
+    <!-- ══════════════════════════════════════
+         SCREEN: REGLAS
+    ══════════════════════════════════════ -->
+    <div class="screen" id="screen-rules">
+      <div class="mb-6">
+        <h1 style="font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Reglas activas</h1>
+        <p style="font-size:13px;color:#64748B;">7 reglas configuradas para Grupo Crux — Fase 1.</p>
+      </div>
+      <div id="rules-detail-grid" style="display:flex;flex-direction:column;gap:12px;max-width:800px;"></div>
+    </div>
 
-  </main>
+    <!-- Elementos ocultos para compatibilidad JS -->
+    <div hidden>
+      <div id="results-section"></div>
+    </div>
 
-  <script>
+  </div><!-- /app-content -->
+</div><!-- /app-shell -->
+
+<script>
+
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
     const GROUPS = {
@@ -1875,7 +1906,342 @@
     });
     resetResults();
     updateRunState();
+  
+// ═══════════════════════════════════════════
+// NUEVO SISTEMA: RUNS + HISTORIAL + NAVEGACIÓN
+
+    // ── Estado de navegación y historial ─────────────────
+    let auditRuns = JSON.parse(localStorage.getItem('auditator_runs') || '[]');
+    let activeRunId = null;
+    let ruleFilter = null;
+
+    function saveRuns() {
+      localStorage.setItem('auditator_runs', JSON.stringify(auditRuns));
+    }
+
+    function generateRunId() {
+      const n = auditRuns.length + 1;
+      return '#AUD-' + new Date().getFullYear() + '-' + String(n).padStart(3, '0');
+    }
+
+    // ── Navegación entre pantallas ────────────────────────
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const screen = document.getElementById('screen-' + name);
+      const nav = document.getElementById('nav-' + name);
+      if (screen) screen.classList.add('active');
+      if (nav) nav.classList.add('active');
+      if (name === 'runs') renderRunsList();
+      if (name === 'rules') renderRulesScreen();
+      if (name === 'new') { hideBanner(); updateRunState(); }
+    }
+
+    // ── Renderizar lista de runs ──────────────────────────
+    function renderRunsList() {
+      const badge = document.getElementById('runs-badge');
+      badge.textContent = auditRuns.length;
+      badge.className = 'badge-count ml-auto' + (auditRuns.length ? ' red' : '');
+
+      // KPIs globales
+      document.getElementById('kpi-total-runs').textContent = auditRuns.length;
+      if (auditRuns.length > 0) {
+        const last = auditRuns[auditRuns.length - 1];
+        document.getElementById('kpi-last-findings').textContent = last.totalFindings.toLocaleString('es-CL');
+        document.getElementById('kpi-last-rules').textContent = last.rulesAlert;
+        document.getElementById('kpi-last-companies').textContent = last.companies;
+      }
+
+      const container = document.getElementById('runs-list');
+      if (!auditRuns.length) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p style="font-size:14px;font-weight:600;color:#64748B;margin-bottom:6px;">Sin auditorías aún</p><p style="font-size:12px;">Ejecuta tu primera auditoría desde <strong>Nueva auditoría</strong>.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = [...auditRuns].reverse().map(run => {
+        const badges = run.summaries.map(s => {
+          const cls = s.findingCount > 0 ? 'pill-alert' : 'pill-ok';
+          return `<span class="pill ${cls}" title="${s.title}" style="font-size:10px;padding:1px 7px;">${s.findingCount}</span>`;
+        }).join('');
+        return `
+        <div class="run-row" onclick="openRun('${run.id}')">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#2563EB;">${run.runId}</span>
+          <span style="font-size:11px;color:#64748B;">${run.date}</span>
+          <span><span style="font-weight:600;color:#0F172A;">${run.group}</span><br><span style="font-size:11px;color:#94A3B8;">${run.period}</span></span>
+          <span style="font-size:12px;color:#374151;">${run.companies} emp.</span>
+          <div style="display:flex;gap:3px;flex-wrap:wrap;">${badges}</div>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#0F172A;">${run.totalFindings.toLocaleString('es-CL')}</span>
+          <span><span class="dot ${run.totalFindings > 0 ? 'dot-warn' : 'dot-ok'}" style="margin-right:6px;"></span><span style="font-size:11px;font-weight:600;color:${run.totalFindings > 0 ? '#D97706' : '#16A34A'};">${run.totalFindings > 0 ? 'Con hallazgos' : 'OK'}</span></span>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Abrir detalle de un run ───────────────────────────
+    function openRun(id) {
+      const run = auditRuns.find(r => r.id === id);
+      if (!run) return;
+      activeRunId = id;
+
+      // Restaurar estado
+      state.findings = run.findings;
+      state.summaries = run.summaries;
+      state.auditMonth = run.auditMonth;
+      state.companyCount = run.companies;
+      state.fonasaDocuments = run.fonasaDocs;
+      state.filter = 'all';
+      ruleFilter = null;
+
+      // Header
+      document.getElementById('detail-title').textContent = run.runId + ' — ' + run.group;
+      document.getElementById('detail-subtitle').textContent = run.period + ' · ' + run.date + ' · ' + run.totalFindings + ' hallazgos';
+
+      // KPIs
+      document.getElementById('summary-findings').textContent = run.totalFindings.toLocaleString('es-CL');
+      document.getElementById('summary-rules-alert').textContent = run.rulesAlert;
+      document.getElementById('summary-companies').textContent = run.companies;
+      document.getElementById('summary-fonasa-docs').textContent = run.fonasaDocs;
+      document.getElementById('audit-month-results').textContent = monthLabel(run.auditMonth);
+
+      // Renderizar
+      renderRuleSummaryCards();
+      renderFindingsTable();
+
+      document.getElementById('nav-runs').classList.add('active');
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-run-detail').classList.add('active');
+    }
+
+    // ── Renderizar cards de reglas ────────────────────────
+    function renderRuleSummaryCards() {
+      const grid = document.getElementById('rule-summary-grid');
+      grid.innerHTML = state.summaries.map(s => `
+        <div class="rule-card ${s.findingCount ? 'alert' : 'ok'}" onclick="filterByRule('${s.id}', '${s.title.replace(/'/g,"\\'")}')">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <div>
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${s.findingCount ? '#DC2626' : '#16A34A'};margin-bottom:4px;">${s.status}</p>
+              <p style="font-size:13px;font-weight:600;color:#0F172A;line-height:1.3;">${s.title}</p>
+            </div>
+            <span class="pill ${s.findingCount ? 'pill-alert' : 'pill-ok'}" style="flex-shrink:0;">${s.findingCount} hallazgos</span>
+          </div>
+          <p style="font-size:11px;color:#64748B;line-height:1.5;margin-bottom:8px;">${s.note}</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <p style="font-size:10px;color:#94A3B8;">Universo: ${s.reviewed.toLocaleString('es-CL')}</p>
+            ${s.findingCount ? '<span style="font-size:11px;color:#2563EB;font-weight:600;">Ver detalle →</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── Filtrar tabla por regla ───────────────────────────
+    function filterByRule(ruleId, ruleTitle) {
+      ruleFilter = ruleId;
+      state.filter = 'all';
+      setFilterButtons();
+      document.getElementById('table-title').textContent = ruleTitle;
+      document.getElementById('rule-export-btn').classList.remove('hidden');
+      document.getElementById('clear-rule-filter').classList.remove('hidden');
+      renderFindingsTable();
+      document.getElementById('screen-run-detail').querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function clearRuleFilter() {
+      ruleFilter = null;
+      state.filter = 'all';
+      setFilterButtons();
+      document.getElementById('table-title').textContent = 'Todos los hallazgos';
+      document.getElementById('rule-export-btn').classList.add('hidden');
+      document.getElementById('clear-rule-filter').classList.add('hidden');
+      renderFindingsTable();
+    }
+
+    // ── Renderizar tabla de hallazgos ─────────────────────
+    function renderFindingsTable() {
+      let findings = state.findings;
+      if (ruleFilter) findings = findings.filter(f => f.ruleId === ruleFilter || f.ruleTitle === document.getElementById('table-title').textContent);
+      if (state.filter !== 'all') findings = findings.filter(f => f.severity === state.filter);
+
+      const body = document.getElementById('results-body');
+      if (!findings.length) {
+        body.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;color:#94A3B8;font-size:13px;">Sin hallazgos para este filtro.</td></tr>`;
+      } else {
+        body.innerHTML = findings.map((item, idx) => {
+          const prev = idx > 0 ? findings[idx - 1].ruleTitle : null;
+          const showRule = item.ruleTitle !== prev;
+          const rowCls = item.severity === 'alta' ? 'tr-alta' : item.severity === 'media' ? 'tr-media' : 'tr-baja';
+          const breakCls = showRule && idx > 0 ? 'tr-rule-break' : '';
+          const pillCls = item.severity === 'alta' ? 'pill-alta' : item.severity === 'media' ? 'pill-media' : 'pill-baja';
+          return `<tr class="${rowCls} ${breakCls}">
+            <td><span class="pill ${pillCls}">${severityLabel(item.severity)}</span></td>
+            <td style="font-size:11px;font-weight:600;color:#94A3B8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.ruleTitle}">${showRule ? item.ruleTitle : ''}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;white-space:nowrap;">${item.rut}</td>
+            <td style="font-size:12px;font-weight:500;color:#0F172A;white-space:nowrap;">${item.name}</td>
+            <td style="font-size:11px;color:#64748B;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.company}">${item.company}</td>
+            <td style="font-size:11px;color:#374151;line-height:1.4;">${item.detail}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;text-align:right;white-space:nowrap;">${item.bookValue || '—'}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;text-align:right;white-space:nowrap;">${item.externalValue || '—'}</td>
+            <td style="font-size:11px;color:#64748B;">${item.reference || '—'}</td>
+          </tr>`;
+        }).join('');
+      }
+      document.getElementById('results-count').textContent = `Mostrando ${findings.length.toLocaleString('es-CL')} de ${state.findings.length.toLocaleString('es-CL')} hallazgos.`;
+    }
+
+    // ── Pantalla de reglas ────────────────────────────────
+    function renderRulesScreen() {
+      const grid = document.getElementById('rules-detail-grid');
+      grid.innerHTML = RULE_DEFINITIONS.map((rule, i) => `
+        <div class="card p-5 flex items-start gap-4">
+          <div style="width:32px;height:32px;border-radius:8px;background:#EFF6FF;color:#2563EB;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i + 1}</div>
+          <div>
+            <p style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px;">${rule.title}</p>
+            <p style="font-size:12px;color:#64748B;line-height:1.5;">${rule.detail}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── Sobrescribir renderResults del JS core ────────────
+    function renderResults() {
+      // Guardar el run en historial
+      const runId = generateRunId();
+      const run = {
+        id: Date.now().toString(),
+        runId,
+        date: new Date().toLocaleString('es-CL', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+        group: currentGroupConfig().label,
+        period: monthLabel(state.auditMonth),
+        auditMonth: state.auditMonth,
+        companies: state.companyCount,
+        fonasaDocs: state.fonasaDocuments,
+        totalFindings: state.findings.length,
+        rulesAlert: state.summaries.filter(s => s.findingCount > 0).length,
+        findings: state.findings,
+        summaries: state.summaries
+      };
+      auditRuns.push(run);
+      saveRuns();
+      showBanner('success', `Auditoría completada. ${state.findings.length.toLocaleString('es-CL')} hallazgos en ${RULE_DEFINITIONS.length} reglas. Guardado como ${runId}.`);
+      setTimeout(() => openRun(run.id), 800);
+    }
+
+    // ── Override setFilterButtons ─────────────────────────
+    function setFilterButtons() {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        const active = btn.dataset.filter === state.filter;
+        btn.className = active ? 'btn-secondary active filter-btn' : 'btn-secondary filter-btn';
+        btn.style.cssText = active ? 'font-size:11px;padding:5px 11px;' : 'font-size:11px;padding:5px 11px;';
+      });
+    }
+
+    // ── Override getFilteredFindings ──────────────────────
+    function getFilteredFindings() {
+      let findings = state.findings;
+      if (ruleFilter) {
+        const title = document.getElementById('table-title').textContent;
+        findings = findings.filter(f => f.ruleTitle === title);
+      }
+      if (state.filter !== 'all') findings = findings.filter(f => f.severity === state.filter);
+      return findings;
+    }
+
+    // ── Export por regla ──────────────────────────────────
+    document.getElementById('rule-export-btn').addEventListener('click', () => {
+      const title = document.getElementById('table-title').textContent;
+      const findings = state.findings.filter(f => f.ruleTitle === title);
+      const ws = XLSX.utils.json_to_sheet(findings.map(item => ({
+        Severidad: severityLabel(item.severity), Regla: item.ruleTitle,
+        RUT: item.rut, Nombre: item.name, Empresa: item.company,
+        Detalle: item.detail, Libro: item.bookValue, Externo: item.externalValue, Referencia: item.reference
+      })));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 30));
+      XLSX.writeFile(wb, `AUDITATOR_${title.slice(0,20).replace(/\s+/g,'_')}.xlsx`);
+    });
+
+    // ── showBanner override (pantalla new) ────────────────
+    const _origShowBanner = showBanner;
+    function showBanner(type, message) {
+      const el = document.getElementById('feedback-banner');
+      el.className = '';
+      const styles = {
+        error: 'border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid #FEE2E2;background:#FFF5F5;color:#DC2626;',
+        success: 'border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid #DCFCE7;background:#F0FDF4;color:#16A34A;',
+        info: 'border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid #BFDBFE;background:#EFF6FF;color:#2563EB;'
+      };
+      el.setAttribute('style', styles[type] || styles.info);
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function hideBanner() {
+      const el = document.getElementById('feedback-banner');
+      el.classList.add('hidden');
+    }
+
+    // ── setDropzoneState override (light meta) ────────────
+    function setDropzoneState(key) {
+      const { zone, meta, error } = getDropzoneElements(key);
+      const entry = state.files[key];
+      const config = FILE_CONFIG[key];
+      zone.classList.remove('dropzone-error');
+      meta.classList.add('hidden');
+      error.classList.add('hidden');
+      error.textContent = '';
+      if (entry && entry.error) {
+        zone.classList.add('dropzone-error');
+        error.textContent = entry.error;
+        error.classList.remove('hidden');
+        return;
+      }
+      if (config.multiple) {
+        if (!Array.isArray(entry) || !entry.length) return;
+        const size = entry.reduce((a, f) => a + f.size, 0);
+        meta.innerHTML = `<div style="text-align:left;"><p style="font-size:11px;font-weight:600;color:#16A34A;margin-bottom:3px;">✓ ${entry.length} archivo${entry.length > 1 ? 's' : ''} · ${formatBytes(size)}</p>${entry.slice(0,2).map(f => `<p style="font-size:10px;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</p>`).join('')}${entry.length > 2 ? `<p style="font-size:10px;color:#94A3B8;">+${entry.length-2} más</p>` : ''}</div>`;
+        meta.classList.remove('hidden');
+        return;
+      }
+      if (entry && entry.file) {
+        meta.innerHTML = `<div style="text-align:left;"><p style="font-size:11px;font-weight:600;color:#16A34A;margin-bottom:3px;">✓ ${formatBytes(entry.file.size)}</p><p style="font-size:10px;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${entry.file.name}">${entry.file.name}</p></div>`;
+        meta.classList.remove('hidden');
+      }
+    }
+
+    // ── renderGroupPanel override ─────────────────────────
+    function renderGroupPanel() {
+      const group = currentGroupConfig();
+      document.getElementById('group-company-list').innerHTML = group.companies.map(c =>
+        `<span style="font-size:11px;background:#F1F5F9;color:#64748B;border-radius:999px;padding:2px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;" title="${c}">${c}</span>`
+      ).join('');
+      document.getElementById('group-note').textContent = group.note;
+      // rule-list se llena pero está hidden
+      const ul = document.getElementById('rule-list');
+      if (ul) ul.innerHTML = RULE_DEFINITIONS.map((r, i) => `<li>${i+1}. ${r.title}</li>`).join('');
+    }
+
+    // ── export-btn del detalle ────────────────────────────
+    document.getElementById('export-btn').addEventListener('click', exportResults);
+
+    // ── Filtros de la tabla de detalle ────────────────────
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.filter = btn.dataset.filter;
+        setFilterButtons();
+        renderFindingsTable();
+      });
+    });
+
+    // ── Inicializar ───────────────────────────────────────
+    populateGroupSelect();
+    renderGroupPanel();
+    setupDropzones();
+    Object.keys(FILE_CONFIG).forEach(key => {
+      if (FILE_CONFIG[key].multiple) state.files[key] = [];
+      setDropzoneState(key);
+    });
+    updateRunState();
+    renderRunsList();
+    showScreen('runs');
+
   </script>
 </body>
-</html>
 </html>
