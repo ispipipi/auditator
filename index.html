@@ -580,18 +580,21 @@
 
     function parseAmount(value) {
       if (value === null || value === undefined || value === '') return 0;
-      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      if (typeof value === 'number') return Number.isFinite(value) ? Math.round(value) : 0;
 
       const text = String(value).trim();
       if (!text) return 0;
 
+      // Montos chilenos desde OCR o Excel:
+      // Punto = separador de miles (54.990 → 54990)
+      // Coma = separador de miles alternativo (54,990 → 54990)
+      // Nunca hay decimales en montos de nómina chilena
       const sanitized = text
         .replace(/\$/g, '')
         .replace(/\s+/g, '')
-        .replace(/\.(?=\d{3}(?:\D|$))/g, '')
-        .replace(/,/g, '.');
+        .replace(/[.,]/g, '');  // eliminar TODOS los puntos y comas — son miles
 
-      const parsed = Number.parseFloat(sanitized);
+      const parsed = Number.parseInt(sanitized, 10);
       return Number.isFinite(parsed) ? parsed : 0;
     }
 
