@@ -1610,7 +1610,8 @@
         reviewed: ruleResult.reviewed,
         findingCount: ruleResult.findings.length,
         status: ruleResult.findings.length ? 'Con hallazgos' : 'OK',
-        note: ruleResult.note
+        note: ruleResult.note,
+        sindicatosExcluidos: ruleResult.sindicatosExcluidos || []
       };
     }
 
@@ -2062,9 +2063,15 @@
             </div>
             <span class="pill ${s.findingCount ? 'pill-alert' : 'pill-ok'}" style="flex-shrink:0;">${s.findingCount} hallazgos</span>
           </div>
-          <p style="font-size:11px;color:#64748B;line-height:1.5;margin-bottom:8px;">${s.note}</p>
+          <p style="font-size:11px;color:#64748B;line-height:1.5;margin-bottom:8px;">${s.note.split(' | ')[0]}</p>
+          ${s.id === 'sindicatos' && s.sindicatosExcluidos && s.sindicatosExcluidos.length ? `
+            <div style="margin-bottom:10px;padding:10px 12px;background:#FFFBEB;border:1px solid #FEF3C7;border-radius:8px;">
+              <p style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#D97706;margin-bottom:6px;">⚠ Sin nómina recibida (${s.sindicatosExcluidos.length})</p>
+              <div style="display:flex;flex-direction:column;gap:3px;">${s.sindicatosExcluidos.map(sin => `<span style="font-size:11px;color:#92400E;line-height:1.4;">· ${sin}</span>`).join('')}</div>
+            </div>
+          ` : ''}
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <p style="font-size:10px;color:#94A3B8;">Universo: ${s.reviewed.toLocaleString('es-CL')}</p>
+            <p style="font-size:10px;color:#94A3B8;">Universo auditado: ${s.reviewed.toLocaleString('es-CL')}</p>
             ${s.findingCount ? '<span style="font-size:11px;color:#2563EB;font-weight:600;">Ver detalle →</span>' : ''}
           </div>
         </div>
