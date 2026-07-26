@@ -1264,55 +1264,89 @@
 
     function runRuleSindicatos(detailRecords, maestroMap, nominaMap, contextForRut) {
       const findings = [];
+
+      // 1. Detectar todos los sindicatos únicos en la nómina (los que SÍ están cubiertos)
+      const sindicatosEnNomina = new Set();
+      nominaMap.forEach((sindicatosSet) => {
+        sindicatosSet.forEach((s) => sindicatosEnNomina.add(normalizeText(s)));
+      });
+
+      // 2. Detectar todos los sindicatos únicos en el libro
+      const sindicatosEnLibro = new Set();
+      detailRecords.forEach((record) => {
+        collectLibroSindicatos(record).forEach((s) => sindicatosEnLibro.add(normalizeText(s)));
+      });
+
+      // 3. Sindicatos del libro que NO están cubiertos en la nómina → excluir de auditoría
+      const sindicatosNoEnNomina = new Set();
+      sindicatosEnLibro.forEach((s) => {
+        if (!sindicatosEnNomina.has(s)) sindicatosNoEnNomina.add(s);
+      });
+
+      // 4. Solo auditar RUTs cuyo sindicato SÍ existe en la nómina
       const selectedRuts = new Set([
         ...detailRecords.map((record) => record.rut),
-        ...maestroMap.keys(),
         ...nominaMap.keys()
       ]);
 
       selectedRuts.forEach((rut) => {
         const context = contextForRut(rut);
         const libroSindicatos = collectLibroSindicatos(context.detail);
-        const libroNorm = new Set(libroSindicatos.map(normalizeText));
         const nominaSindicatos = Array.from(nominaMap.get(rut) || []);
         const nominaNorm = new Set(nominaSindicatos.map(normalizeText));
 
+        // Solo evaluar sindicatos del libro que SÍ están cubiertos en la nómina
         libroSindicatos.forEach((sindicato) => {
-          if (!nominaNorm.has(normalizeText(sindicato))) {
+          const norm = normalizeText(sindicato);
+          if (sindicatosNoEnNomina.has(norm)) return; // excluir — no está en nómina
+          if (!nominaNorm.has(norm)) {
             findings.push(createFinding(
               'sindicatos',
               'media',
               context,
-              'Sindicato presente en libro pero ausente en nomina sindical.',
+              'Sindicato cubierto en nomina pero RUT no aparece en ella.',
               sindicato,
-              nominaSindicatos.join(' | ') || 'Sin registro',
-              'Validacion por mismo RUT + mismo sindicato'
+              nominaSindicatos.join(' | ') || 'Sin registro en nomina',
+              'Sindicato si existe en nomina para otros RUT'
             ));
           }
         });
 
+        // RUT en nómina que no tiene ese sindicato en el libro
         nominaSindicatos.forEach((sindicato) => {
+          const libroNorm = new Set(libroSindicatos.map(normalizeText));
           if (!libroNorm.has(normalizeText(sindicato))) {
             findings.push(createFinding(
               'sindicatos',
               'media',
               context,
-              'Sindicato presente en nomina pero no encontrado en libro.',
+              'Sindicato en nomina pero RUT no figura con ese sindicato en el libro.',
               libroSindicatos.join(' | ') || 'Sin sindicato en libro',
               sindicato,
-              'Validacion por mismo RUT + mismo sindicato'
+              'Validacion por RUT + sindicato'
             ));
           }
         });
       });
 
+      // 5. Construir nota con sindicatos excluidos
+      const excluidos = Array.from(sindicatosNoEnNomina);
+      let note = '';
+      if (findings.length) {
+        note = `${findings.length} diferencias en sindicatos cubiertos por la nomina.`;
+      } else {
+        note = 'Sin diferencias en sindicatos cubiertos.';
+      }
+      if (excluidos.length) {
+        note += ` | ${excluidos.length} sindicato(s) del libro sin nomina recibida: ${excluidos.slice(0, 3).join(', ')}${excluidos.length > 3 ? ` y ${excluidos.length - 3} más` : ''}.`;
+      }
+
       return {
         id: 'sindicatos',
         reviewed: selectedRuts.size,
         findings,
-        note: findings.length
-          ? `${findings.length} diferencias entre libro y nomina sindical.`
-          : 'Libro y nomina sindical cuadran para los RUT revisados.'
+        note,
+        sindicatosExcluidos: excluidos  // disponible para mostrar en detalle
       };
     }
 
@@ -1435,7 +1469,12 @@
       const entries = [];
 
       for (const line of lines) {
-        const match = line.match(/(\d{7,8}\s*-\s*[\dK])\s+([A-ZÁÉÍÓÚÑÜ ]{5,}?)\s+(?:\$?\s*)([\d.,]{4,})$/);
+        // Formato BBVA: "97244041/28 13656896-5 NOMBRE APELLIDO $ 54,990"
+        // Formato Scotiabank: "13689247-9 NOMBRE APELLIDO $ 93,750"
+        // El codigo de prestamo (97244041/28) puede aparecer antes del RUT
+        const match =
+          line.match(/(?:\d+\/\d+\s+)?(\d{7,8}\s*-\s*[\dK])\s+([A-Z][A-ZÁÉÍÓÚÑÜ ]{4,}?)\s+(?:\$?\s*)([\d.,]{4,})$/) ||
+          line.match(/(\d{7,8}\s*-\s*[\dK])\s+([A-Z][A-ZÁÉÍÓÚÑÜ ]{4,}?)\s+(?:\$?\s*)([\d.,]{4,})/);
         if (!match) continue;
 
         const rut = normalizeRut(match[1]);
