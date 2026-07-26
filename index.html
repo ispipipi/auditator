@@ -10,19 +10,26 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Manrope', 'sans-serif'],
-              display: ['Space Grotesk', 'sans-serif']
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace']
             },
             colors: {
-              auditInk: '#0B1324',
-              auditBlue: '#0F4C81',
-              auditSky: '#39A9DB',
-              auditMint: '#D7F3E3',
-              auditSand: '#F7F1E8',
-              auditRose: '#FDECEC'
-            },
-            boxShadow: {
-              glow: '0 24px 80px rgba(11, 19, 36, 0.12)'
+              ink:    '#0D1117',
+              ink2:   '#161B22',
+              ink3:   '#21262D',
+              border: '#30363D',
+              muted:  '#8B949E',
+              text:   '#C9D1D9',
+              bright: '#F0F6FC',
+              accent: '#2F81F7',
+              accentHover: '#388BFD',
+              good:   '#3FB950',
+              warn:   '#D29922',
+              danger: '#F85149',
+              dangerBg: 'rgba(248,81,73,0.1)',
+              warnBg:   'rgba(210,153,34,0.1)',
+              goodBg:   'rgba(63,185,80,0.1)',
+              accentBg: 'rgba(47,129,247,0.1)'
             }
           }
         }
@@ -33,276 +40,327 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Manrope', sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(57, 169, 219, 0.22), transparent 28%),
-        radial-gradient(circle at right 10%, rgba(15, 76, 129, 0.14), transparent 22%),
-        linear-gradient(180deg, #f8fafc 0%, #eef4f9 42%, #e7eef6 100%);
+    * { box-sizing: border-box; }
+    body { background: #0D1117; color: #C9D1D9; font-family: 'Inter', sans-serif; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #8B949E; }
+
+    .dropzone-active { border-color: #2F81F7 !important; background: rgba(47,129,247,0.06) !important; }
+    .dropzone-error  { border-color: #F85149 !important; background: rgba(248,81,73,0.06) !important; }
+
+    .badge-alta   { background: rgba(248,81,73,0.15);  color: #F85149; border: 1px solid rgba(248,81,73,0.3); }
+    .badge-media  { background: rgba(210,153,34,0.15); color: #D29922; border: 1px solid rgba(210,153,34,0.3); }
+    .badge-baja   { background: rgba(47,129,247,0.15); color: #2F81F7; border: 1px solid rgba(47,129,247,0.3); }
+
+    .row-alta  { background: rgba(248,81,73,0.04); }
+    .row-media { background: rgba(210,153,34,0.04); }
+    .row-baja  { background: transparent; }
+
+    .card { background: #161B22; border: 1px solid #30363D; border-radius: 12px; }
+    .card-hover { transition: border-color 0.15s; }
+    .card-hover:hover { border-color: #8B949E; }
+
+    .btn-primary {
+      background: #2F81F7; color: #fff; border-radius: 8px;
+      font-weight: 600; font-size: 14px; padding: 10px 20px;
+      border: none; cursor: pointer; transition: background 0.15s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover:not(:disabled) { background: #388BFD; }
+    .btn-primary:disabled { background: #21262D; color: #8B949E; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent; color: #C9D1D9;
+      border: 1px solid #30363D; border-radius: 8px;
+      font-weight: 500; font-size: 13px; padding: 7px 14px;
+      cursor: pointer; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-ghost:hover { background: #21262D; border-color: #8B949E; }
+    .btn-ghost.active { background: #2F81F7; border-color: #2F81F7; color: #fff; }
+
+    .select-dark {
+      background: #161B22; border: 1px solid #30363D; color: #C9D1D9;
+      border-radius: 8px; padding: 8px 12px; font-size: 14px;
+      font-family: 'Inter', sans-serif; outline: none; width: 100%;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .select-dark:focus { border-color: #2F81F7; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px; font-size: 11px;
+      font-weight: 600; letter-spacing: 0.03em;
     }
 
-    .dropzone-active {
-      border-color: #39A9DB !important;
-      background: rgba(57, 169, 219, 0.12) !important;
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 500;
+      background: #21262D; color: #8B949E; border: 1px solid #30363D;
     }
 
-    .dropzone-error {
-      border-color: #dc2626 !important;
-      background: rgba(220, 38, 38, 0.06) !important;
-    }
+    thead th { position: sticky; top: 0; z-index: 1; }
 
-    .results-scroll::-webkit-scrollbar {
-      height: 10px;
-      width: 10px;
-    }
+    .rule-card-ok     { border-left: 3px solid #3FB950; }
+    .rule-card-alert  { border-left: 3px solid #D29922; }
 
-    .results-scroll::-webkit-scrollbar-thumb {
-      background: rgba(11, 19, 36, 0.18);
-      border-radius: 999px;
+    .kpi-num { font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #21262D; border: 1px solid #30363D;
+      font-size: 11px; font-weight: 700; color: #8B949E;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
+    .step-num.done { background: rgba(63,185,80,0.15); border-color: #3FB950; color: #3FB950; }
+    .step-num.active { background: rgba(47,129,247,0.15); border-color: #2F81F7; color: #2F81F7; }
+
+    .fonasa-state { font-size: 11px; color: #8B949E; }
   </style>
 </head>
-<body class="min-h-screen text-slate-900">
-  <div class="min-h-screen">
-    <header class="border-b border-white/10 bg-auditInk text-white shadow-glow">
-      <div class="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-6 py-7 lg:px-10 xl:flex-row xl:items-center xl:justify-between">
-        <div class="flex items-start gap-4">
-          <div class="flex h-14 w-14 items-center justify-center rounded-3xl border border-white/10 bg-white/10 font-display text-xl font-bold text-cyan-200">
-            AU
-          </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.34em] text-cyan-200">Nominas NPR</p>
-            <h1 class="font-display text-3xl font-bold tracking-tight">AUDITATOR</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Auditorias transversales por grupo, ejecutadas localmente en tu navegador y pensadas para revisar
-              libro acumulado, maestro, nominas sindicales y prestamos Fonasa.
-            </p>
-          </div>
+<body class="min-h-screen">
+
+  <!-- HEADER -->
+  <header style="background:#161B22; border-bottom:1px solid #30363D; position:sticky; top:0; z-index:50;">
+    <div class="mx-auto flex w-full max-w-[1480px] items-center justify-between px-6 py-3">
+      <div class="flex items-center gap-3">
+        <div style="width:32px;height:32px;border-radius:8px;background:#2F81F7;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;letter-spacing:0.02em;">AU</div>
+        <div>
+          <span style="font-weight:700;font-size:16px;color:#F0F6FC;letter-spacing:-0.01em;">AUDITATOR</span>
+          <span style="font-size:12px;color:#8B949E;margin-left:8px;">Reglas de nómina</span>
         </div>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="rounded-3xl border border-white/10 bg-white/5 px-5 py-4">
-            <p class="text-[11px] uppercase tracking-[0.28em] text-slate-400">Estado</p>
-            <p id="status-pill" class="mt-2 text-sm font-semibold text-white">Configurando auditoria</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <span style="width:7px;height:7px;border-radius:50%;background:#3FB950;display:inline-block;"></span>
+          <span id="status-pill" style="font-size:12px;color:#8B949E;">Configurando auditoría</span>
+        </div>
+        <div style="height:16px;width:1px;background:#30363D;"></div>
+        <span style="font-size:12px;color:#8B949E;">Mes detectado: <span id="audit-month-pill" style="color:#C9D1D9;font-weight:500;">—</span></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-[1480px] px-6 py-6">
+
+    <!-- CONFIGURACIÓN -->
+    <div class="card mb-5" style="padding:0;overflow:hidden;">
+
+      <!-- Barra de pasos -->
+      <div style="background:#0D1117;border-bottom:1px solid #30363D;padding:14px 24px;">
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <div class="step-num" id="step1-num">1</div>
+            <span style="font-size:13px;font-weight:600;color:#C9D1D9;">Grupo</span>
           </div>
-          <div class="rounded-3xl border border-white/10 bg-white/5 px-5 py-4">
-            <p class="text-[11px] uppercase tracking-[0.28em] text-slate-400">Cobertura actual</p>
-            <p class="mt-2 text-sm font-semibold text-white">Grupo Crux habilitado</p>
+          <div style="flex:1;height:1px;background:#30363D;max-width:40px;"></div>
+          <div class="flex items-center gap-2">
+            <div class="step-num" id="step2-num">2</div>
+            <span style="font-size:13px;font-weight:600;color:#C9D1D9;">Insumos</span>
+          </div>
+          <div style="flex:1;height:1px;background:#30363D;max-width:40px;"></div>
+          <div class="flex items-center gap-2">
+            <div class="step-num" id="step3-num">3</div>
+            <span style="font-size:13px;font-weight:600;color:#C9D1D9;">Ejecutar</span>
+          </div>
+          <div class="ml-auto">
+            <span style="font-size:12px;color:#8B949E;">Cobertura: <span style="color:#2F81F7;font-weight:600;">Grupo Crux habilitado</span></span>
           </div>
         </div>
       </div>
-    </header>
 
-    <main class="mx-auto w-full max-w-[1480px] px-6 py-8 lg:px-10">
-      <section class="overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-glow backdrop-blur">
-        <div class="grid gap-0 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <aside class="border-b border-slate-200/80 bg-slate-50/90 p-6 xl:border-b-0 xl:border-r">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Paso 1</p>
-            <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-auditInk">Selecciona el grupo</h2>
-            <p class="mt-3 text-sm leading-6 text-slate-600">
-              Esta primera version deja operativo Grupo Crux y deja preparados los otros grupos para la siguiente etapa.
-            </p>
+      <div style="display:grid;grid-template-columns:280px 1fr;min-height:320px;">
 
-            <label for="group-select" class="mt-6 block text-sm font-semibold text-slate-700">Grupo de empresas</label>
-            <select
-              id="group-select"
-              class="mt-3 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-auditSky focus:ring-4 focus:ring-sky-100"
-            ></select>
+        <!-- PANEL IZQUIERDO: Grupo -->
+        <div style="border-right:1px solid #30363D;padding:20px;background:#0D1117;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:10px;">Grupo de empresas</p>
+          <select id="group-select" class="select-dark mb-4"></select>
 
-            <div id="group-card" class="mt-6 rounded-[28px] bg-auditInk px-5 py-5 text-white">
-              <p class="text-[11px] uppercase tracking-[0.28em] text-cyan-200">Empresas consideradas</p>
-              <div id="group-company-list" class="mt-4 flex flex-wrap gap-2"></div>
-              <p id="group-note" class="mt-4 text-sm leading-6 text-slate-300"></p>
-            </div>
+          <div id="group-card" style="border-radius:8px;background:#21262D;border:1px solid #30363D;padding:14px;">
+            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:8px;">Empresas</p>
+            <div id="group-company-list" class="flex flex-col gap-1"></div>
+            <p id="group-note" style="margin-top:10px;font-size:11px;color:#8B949E;line-height:1.5;"></p>
+          </div>
 
-            <div class="mt-6 rounded-[28px] border border-slate-200 bg-white px-5 py-5">
-              <p class="text-[11px] uppercase tracking-[0.28em] text-slate-500">Reglas fase 1</p>
-              <ul id="rule-list" class="mt-4 space-y-3 text-sm leading-6 text-slate-700"></ul>
-            </div>
-          </aside>
-
-          <div class="p-6 lg:p-8">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Paso 2</p>
-                <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-auditInk">Carga los insumos</h2>
-                <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                  La auditoria toma el libro acumulado como base principal, cruza renovaciones con Maestro Basico,
-                  valida sindicatos contra la nomina y concilia Fonasa con OCR local para imagenes y PDF.
-                </p>
-              </div>
-              <div class="rounded-3xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-slate-700">
-                Mes detectado:
-                <span id="audit-month-pill" class="font-semibold text-slate-900">Aun no disponible</span>
-              </div>
-            </div>
-
-            <div class="mt-8 grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
-              <div
-                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
-                data-file-key="detalle"
-              >
-                <input id="file-detalle" type="file" accept=".xlsx" class="sr-only">
-                <div class="pointer-events-none">
-                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">📘</div>
-                  <p class="mt-5 text-base font-semibold text-slate-900">Detalle proceso</p>
-                  <p class="mt-2 text-sm text-slate-500">Libro acumulado .xlsx</p>
-                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Arrastra o haz clic</p>
-                </div>
-                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-              </div>
-
-              <div
-                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
-                data-file-key="maestro"
-              >
-                <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
-                <div class="pointer-events-none">
-                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🧾</div>
-                  <p class="mt-5 text-base font-semibold text-slate-900">Maestro Basico</p>
-                  <p class="mt-2 text-sm text-slate-500">Contratos, causales y renovaciones</p>
-                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Solo .xlsx</p>
-                </div>
-                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-              </div>
-
-              <div
-                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
-                data-file-key="sindicato"
-              >
-                <input id="file-sindicato" type="file" accept=".xlsx" class="sr-only">
-                <div class="pointer-events-none">
-                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🤝</div>
-                  <p class="mt-5 text-base font-semibold text-slate-900">Nomina sindical</p>
-                  <p class="mt-2 text-sm text-slate-500">CUOTAS + CORRECIONES dentro del mismo archivo</p>
-                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Solo .xlsx</p>
-                </div>
-                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-              </div>
-
-              <div
-                class="dropzone group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-auditSky hover:bg-sky-50/60"
-                data-file-key="fonasa"
-              >
-                <input id="file-fonasa" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple class="sr-only">
-                <div class="pointer-events-none">
-                  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🏥</div>
-                  <p class="mt-5 text-base font-semibold text-slate-900">Prestamos Fonasa</p>
-                  <p class="mt-2 text-sm text-slate-500">Imagenes o PDF. Se leen con OCR local.</p>
-                  <p class="mt-5 text-xs uppercase tracking-[0.24em] text-slate-400">Multiples archivos</p>
-                </div>
-                <div class="file-meta hidden w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"></div>
-                <div class="file-error hidden w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-700"></div>
-              </div>
-            </div>
-
-            <div class="mt-8 flex flex-col items-center gap-4">
-              <button
-                id="run-audit-btn"
-                class="inline-flex min-w-[280px] items-center justify-center gap-3 rounded-full bg-slate-300 px-8 py-4 text-base font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 enabled:bg-auditBlue enabled:hover:bg-sky-700"
-                disabled
-              >
-                <span id="run-icon">▶</span>
-                <span id="run-label">Ejecutar auditoria Grupo Crux</span>
-              </button>
-              <p id="run-help" class="text-sm text-slate-500">Carga los 4 insumos para habilitar la ejecucion.</p>
-            </div>
+          <div style="margin-top:14px;">
+            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:8px;">Reglas activas</p>
+            <ul id="rule-list" class="flex flex-col gap-1"></ul>
           </div>
         </div>
-      </section>
 
-      <section id="feedback-banner" class="mt-6 hidden rounded-3xl border px-5 py-4 text-sm font-medium"></section>
+        <!-- PANEL DERECHO: Insumos + Ejecutar -->
+        <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
 
-      <section id="results-section" class="mt-8 hidden space-y-8">
-        <div class="grid gap-5 xl:grid-cols-4">
-          <article class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-glow">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Hallazgos</p>
-            <p id="summary-findings" class="mt-4 text-4xl font-bold tracking-tight text-auditInk">0</p>
-            <p class="mt-3 text-sm text-slate-500">Observaciones detectadas en las reglas activas</p>
-          </article>
-          <article class="rounded-[30px] border border-amber-200 bg-white p-6 shadow-glow">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">Reglas con alerta</p>
-            <p id="summary-rules-alert" class="mt-4 text-4xl font-bold tracking-tight text-amber-700">0</p>
-            <p class="mt-3 text-sm text-slate-500">De un total de 7 reglas revisadas</p>
-          </article>
-          <article class="rounded-[30px] border border-emerald-200 bg-white p-6 shadow-glow">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-700">Empresas revisadas</p>
-            <p id="summary-companies" class="mt-4 text-4xl font-bold tracking-tight text-emerald-700">0</p>
-            <p id="summary-companies-note" class="mt-3 text-sm text-slate-500">0 empresas con movimientos en el periodo</p>
-          </article>
-          <article class="rounded-[30px] border border-sky-200 bg-white p-6 shadow-glow">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Documentos Fonasa</p>
-            <p id="summary-fonasa-docs" class="mt-4 text-4xl font-bold tracking-tight text-sky-700">0</p>
-            <p id="summary-fonasa-note" class="mt-3 text-sm text-slate-500">Archivos leidos para la conciliacion</p>
-          </article>
+          <!-- Grid de 4 zonas -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1;">
+
+            <div class="dropzone card card-hover" data-file-key="detalle"
+              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
+              <input id="file-detalle" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none w-full">
+                <div style="font-size:22px;margin-bottom:10px;">📘</div>
+                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Detalle proceso</p>
+                <p style="font-size:11px;color:#8B949E;">Libro acumulado .xlsx</p>
+                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Arrastra o clic</p>
+              </div>
+              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
+              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
+            </div>
+
+            <div class="dropzone card card-hover" data-file-key="maestro"
+              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
+              <input id="file-maestro" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none w-full">
+                <div style="font-size:22px;margin-bottom:10px;">🧾</div>
+                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Maestro Básico</p>
+                <p style="font-size:11px;color:#8B949E;">Contratos y renovaciones</p>
+                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Solo .xlsx</p>
+              </div>
+              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
+              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
+            </div>
+
+            <div class="dropzone card card-hover" data-file-key="sindicato"
+              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
+              <input id="file-sindicato" type="file" accept=".xlsx" class="sr-only">
+              <div class="pointer-events-none w-full">
+                <div style="font-size:22px;margin-bottom:10px;">🤝</div>
+                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Nómina sindical</p>
+                <p style="font-size:11px;color:#8B949E;">Cuotas + correcciones</p>
+                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Solo .xlsx</p>
+              </div>
+              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
+              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
+            </div>
+
+            <div class="dropzone card card-hover" data-file-key="fonasa"
+              style="min-height:160px;cursor:pointer;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;position:relative;">
+              <input id="file-fonasa" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple class="sr-only">
+              <div class="pointer-events-none w-full">
+                <div style="font-size:22px;margin-bottom:10px;">🏥</div>
+                <p style="font-size:13px;font-weight:600;color:#F0F6FC;margin-bottom:4px;">Préstamos Fonasa</p>
+                <p style="font-size:11px;color:#8B949E;">PDF o imagen — OCR local</p>
+                <p style="font-size:10px;color:#8B949E;margin-top:8px;letter-spacing:0.06em;text-transform:uppercase;">Múltiples archivos</p>
+              </div>
+              <div class="file-meta hidden w-full" style="margin-top:12px;"></div>
+              <div class="file-error hidden w-full" style="margin-top:8px;font-size:11px;color:#F85149;"></div>
+            </div>
+
+          </div>
+
+          <!-- Botón ejecutar -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:4px;">
+            <p id="run-help" style="font-size:12px;color:#8B949E;">Carga los 4 insumos para habilitar la ejecución.</p>
+            <button id="run-audit-btn" class="btn-primary" disabled style="min-width:220px;justify-content:center;">
+              <span id="run-icon">▶</span>
+              <span id="run-label">Ejecutar auditoría</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- BANNER -->
+    <div id="feedback-banner" class="hidden mb-5" style="border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid transparent;"></div>
+
+    <!-- RESULTADOS -->
+    <section id="results-section" class="hidden" style="display:none;flex-direction:column;gap:16px;">
+
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+
+        <div class="card" style="padding:20px;">
+          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;margin-bottom:12px;">Hallazgos totales</p>
+          <p id="summary-findings" class="kpi-num" style="color:#F0F6FC;">0</p>
+          <p style="font-size:11px;color:#8B949E;margin-top:8px;">Observaciones en reglas activas</p>
         </div>
 
-        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-glow">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Resumen por regla</p>
-              <h3 class="mt-2 font-display text-2xl font-bold tracking-tight text-auditInk">Panel ejecutivo</h3>
-            </div>
-            <div class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
-              Periodo auditado:
-              <span id="audit-month-results" class="font-semibold text-slate-900">No detectado</span>
-            </div>
-          </div>
-          <div id="rule-summary-grid" class="mt-6 grid gap-4 xl:grid-cols-2"></div>
-        </section>
+        <div class="card" style="padding:20px;border-color:rgba(210,153,34,0.3);">
+          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#D29922;text-transform:uppercase;margin-bottom:12px;">Reglas con alerta</p>
+          <p id="summary-rules-alert" class="kpi-num" style="color:#D29922;">0</p>
+          <p style="font-size:11px;color:#8B949E;margin-top:8px;">De 7 reglas revisadas</p>
+        </div>
 
-        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-glow">
-          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Detalle</p>
-              <h3 class="mt-2 font-display text-2xl font-bold tracking-tight text-auditInk">Hallazgos auditables</h3>
-            </div>
-            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <div class="flex flex-wrap gap-2">
-                <button class="filter-btn rounded-full border border-slate-200 bg-auditBlue px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700" data-filter="all">Todos</button>
-                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700" data-filter="alta">Alta</button>
-                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700" data-filter="media">Media</button>
-                <button class="filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700" data-filter="baja">Baja</button>
-              </div>
-              <button
-                id="export-btn"
-                class="inline-flex items-center justify-center gap-2 rounded-full bg-auditBlue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
-              >
-                ⬇ Descargar Excel
-              </button>
-            </div>
-          </div>
+        <div class="card" style="padding:20px;border-color:rgba(63,185,80,0.3);">
+          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#3FB950;text-transform:uppercase;margin-bottom:12px;">Empresas revisadas</p>
+          <p id="summary-companies" class="kpi-num" style="color:#3FB950;">0</p>
+          <p id="summary-companies-note" style="font-size:11px;color:#8B949E;margin-top:8px;">Con movimientos en el periodo</p>
+        </div>
 
-          <div class="mt-5 rounded-[28px] border border-slate-200">
-            <div class="results-scroll overflow-x-auto">
-              <table class="min-w-[1480px] divide-y divide-slate-200">
-                <thead class="bg-auditInk text-left text-xs uppercase tracking-[0.22em] text-white">
-                  <tr>
-                    <th class="px-4 py-4 font-semibold">Severidad</th>
-                    <th class="px-4 py-4 font-semibold">Regla</th>
-                    <th class="px-4 py-4 font-semibold">RUT</th>
-                    <th class="px-4 py-4 font-semibold">Nombre</th>
-                    <th class="px-4 py-4 font-semibold">Empresa</th>
-                    <th class="px-4 py-4 font-semibold">Detalle</th>
-                    <th class="px-4 py-4 font-semibold">Libro</th>
-                    <th class="px-4 py-4 font-semibold">Externo</th>
-                    <th class="px-4 py-4 font-semibold">Referencia</th>
-                  </tr>
-                </thead>
-                <tbody id="results-body" class="divide-y divide-slate-200 bg-white"></tbody>
-              </table>
-            </div>
-          </div>
+        <div class="card" style="padding:20px;border-color:rgba(47,129,247,0.3);">
+          <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#2F81F7;text-transform:uppercase;margin-bottom:12px;">Docs Fonasa</p>
+          <p id="summary-fonasa-docs" class="kpi-num" style="color:#2F81F7;">0</p>
+          <p id="summary-fonasa-note" style="font-size:11px;color:#8B949E;margin-top:8px;">Archivos leídos con OCR</p>
+        </div>
 
-          <p id="results-count" class="mt-4 text-sm text-slate-500"></p>
-        </section>
-      </section>
-    </main>
-  </div>
+      </div>
+
+      <!-- Panel ejecutivo por regla -->
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;">Resumen por regla</p>
+            <p style="font-size:16px;font-weight:700;color:#F0F6FC;margin-top:4px;">Panel ejecutivo</p>
+          </div>
+          <span style="font-size:12px;color:#8B949E;">Periodo: <span id="audit-month-results" style="color:#C9D1D9;font-weight:600;">—</span></span>
+        </div>
+        <div id="rule-summary-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
+      </div>
+
+      <!-- Tabla de hallazgos -->
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;color:#8B949E;text-transform:uppercase;">Detalle</p>
+            <p style="font-size:16px;font-weight:700;color:#F0F6FC;margin-top:4px;">Hallazgos auditables</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;gap:4px;">
+              <button class="btn-ghost active filter-btn" data-filter="all">Todos</button>
+              <button class="btn-ghost filter-btn" data-filter="alta">Alta</button>
+              <button class="btn-ghost filter-btn" data-filter="media">Media</button>
+              <button class="btn-ghost filter-btn" data-filter="baja">Baja</button>
+            </div>
+            <div style="width:1px;height:24px;background:#30363D;"></div>
+            <button id="export-btn" class="btn-ghost" style="color:#2F81F7;border-color:#2F81F7;">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Zm-1-5.573L6.5 12.957V3.75a.75.75 0 0 1 1.5 0v9.207l4.75-4.53a.75.75 0 0 1 1.024 1.096l-6.052 5.773a.748.748 0 0 1-1.024 0L.726 9.523a.75.75 0 0 1 1.024-1.096Z"/></svg>
+              Exportar Excel
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;border-radius:8px;border:1px solid #30363D;">
+          <table style="width:100%;min-width:1200px;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#0D1117;border-bottom:1px solid #30363D;">
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Sev.</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Regla</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">RUT</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;">Nombre</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;">Empresa</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;min-width:280px;">Detalle</th>
+                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Libro</th>
+                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;white-space:nowrap;">Externo</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8B949E;min-width:200px;">Referencia</th>
+              </tr>
+            </thead>
+            <tbody id="results-body" style="divide-y:#30363D;"></tbody>
+          </table>
+        </div>
+
+        <p id="results-count" style="margin-top:10px;font-size:11px;color:#8B949E;"></p>
+      </div>
+
+    </section>
+
+  </main>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -577,13 +635,13 @@
     }
 
     function showBanner(type, message) {
-      refs.feedbackBanner.className = 'mt-6 rounded-3xl border px-5 py-4 text-sm font-medium';
+      refs.feedbackBanner.className = 'mb-5';
       if (type === 'error') {
-        refs.feedbackBanner.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
+        refs.feedbackBanner.setAttribute('style', 'border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid rgba(248,81,73,0.3);background:rgba(248,81,73,0.1);color:#F85149;');
       } else if (type === 'success') {
-        refs.feedbackBanner.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+        refs.feedbackBanner.setAttribute('style', 'border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid rgba(63,185,80,0.3);background:rgba(63,185,80,0.1);color:#3FB950;');
       } else {
-        refs.feedbackBanner.classList.add('border-sky-200', 'bg-sky-50', 'text-sky-700');
+        refs.feedbackBanner.setAttribute('style', 'border-radius:8px;padding:12px 16px;font-size:13px;font-weight:500;border:1px solid rgba(47,129,247,0.3);background:rgba(47,129,247,0.1);color:#2F81F7;');
       }
       refs.feedbackBanner.textContent = message;
       refs.feedbackBanner.classList.remove('hidden');
@@ -628,17 +686,11 @@
         const extra = entry.length > 3 ? `<p class="mt-2 text-xs text-slate-500">+${entry.length - 3} archivos adicionales</p>` : '';
 
         meta.innerHTML = `
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-emerald-700">✅ ${config.label} cargados</p>
-              <ul class="mt-2 space-y-1 text-sm text-slate-700">${names}</ul>
-              ${extra}
-            </div>
-            <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-              ${entry.length} docs
-            </div>
+          <div style="text-align:left;">
+            <p style="font-size:11px;font-weight:600;color:#3FB950;margin-bottom:4px;">✓ ${entry.length} archivo${entry.length > 1 ? 's' : ''} · ${formatBytes(size)}</p>
+            ${names.replace(/<li class="truncate">/g,'<p style="font-size:10px;color:#8B949E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">').replace(/<\/li>/g,'</p>')}
+            ${extra.replace('mt-2 text-xs text-slate-500','').replace('<p ','<p style="font-size:10px;color:#8B949E;" ')}
           </div>
-          <p class="mt-3 text-xs text-slate-500">Peso total: ${formatBytes(size)}</p>
         `;
         meta.classList.remove('hidden');
         return;
@@ -646,14 +698,9 @@
 
       if (entry && entry.file) {
         meta.innerHTML = `
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-emerald-700">✅ ${config.label} cargado</p>
-              <p class="mt-1 break-all text-sm text-slate-700">${entry.file.name}</p>
-            </div>
-            <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-              ${formatBytes(entry.file.size)}
-            </div>
+          <div style="text-align:left;">
+            <p style="font-size:11px;font-weight:600;color:#3FB950;margin-bottom:4px;">✓ ${formatBytes(entry.file.size)}</p>
+            <p style="font-size:10px;color:#8B949E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${entry.file.name}">${entry.file.name}</p>
           </div>
         `;
         meta.classList.remove('hidden');
@@ -683,14 +730,14 @@
     function renderGroupPanel() {
       const group = currentGroupConfig();
       refs.groupCompanyList.innerHTML = group.companies.map((company) => `
-        <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">${company}</span>
+        <span style="font-size:11px;color:#8B949E;padding:2px 0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${company}">· ${company}</span>
       `).join('');
       refs.groupNote.textContent = group.note;
 
       refs.ruleList.innerHTML = RULE_DEFINITIONS.map((rule, index) => `
-        <li class="rounded-2xl bg-slate-50 px-4 py-3">
-          <p class="font-semibold text-slate-800">${index + 1}. ${rule.title}</p>
-          <p class="mt-1 text-sm text-slate-500">${rule.detail}</p>
+        <li style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #21262D;">
+          <span style="font-size:10px;font-weight:700;color:#8B949E;min-width:16px;padding-top:1px;">${index + 1}.</span>
+          <span style="font-size:11px;color:#C9D1D9;line-height:1.4;">${rule.title}</span>
         </li>
       `).join('');
     }
@@ -764,9 +811,7 @@
     function setFilterButtons() {
       document.querySelectorAll('.filter-btn').forEach((button) => {
         const active = button.dataset.filter === state.filter;
-        button.className = active
-          ? 'filter-btn rounded-full border border-slate-200 bg-auditBlue px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700'
-          : 'filter-btn rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700';
+        button.className = active ? 'btn-ghost active filter-btn' : 'btn-ghost filter-btn';
       });
     }
 
@@ -1482,19 +1527,17 @@
       refs.summaryFonasaNote.textContent = `${state.fonasaDocuments.toLocaleString('es-CL')} archivos leidos para la conciliacion`;
 
       refs.ruleSummaryGrid.innerHTML = state.summaries.map((summary) => `
-        <article class="rounded-[26px] border ${summary.findingCount ? 'border-amber-200 bg-amber-50/40' : 'border-emerald-200 bg-emerald-50/40'} p-5">
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div style="border-radius:8px;border:1px solid ${summary.findingCount ? 'rgba(210,153,34,0.3)' : 'rgba(63,185,80,0.2)'};background:${summary.findingCount ? 'rgba(210,153,34,0.04)' : 'rgba(63,185,80,0.04)'};padding:14px;border-left:3px solid ${summary.findingCount ? '#D29922' : '#3FB950'};">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-[0.26em] ${summary.findingCount ? 'text-amber-700' : 'text-emerald-700'}">${summary.status}</p>
-              <h4 class="mt-2 text-lg font-bold text-slate-900">${summary.title}</h4>
+              <p style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${summary.findingCount ? '#D29922' : '#3FB950'};margin-bottom:4px;">${summary.status}</p>
+              <p style="font-size:13px;font-weight:600;color:#F0F6FC;line-height:1.3;">${summary.title}</p>
             </div>
-            <div class="rounded-full ${summary.findingCount ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'} px-3 py-1 text-xs font-semibold">
-              ${summary.findingCount} hallazgos
-            </div>
+            <span style="flex-shrink:0;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${summary.findingCount ? 'rgba(210,153,34,0.15)' : 'rgba(63,185,80,0.15)'};color:${summary.findingCount ? '#D29922' : '#3FB950'};">${summary.findingCount} hallazgos</span>
           </div>
-          <p class="mt-4 text-sm leading-6 text-slate-600">${summary.note}</p>
-          <p class="mt-3 text-xs uppercase tracking-[0.22em] text-slate-400">Universo revisado: ${summary.reviewed.toLocaleString('es-CL')}</p>
-        </article>
+          <p style="font-size:11px;color:#8B949E;line-height:1.5;">${summary.note}</p>
+          <p style="margin-top:8px;font-size:10px;color:#8B949E;letter-spacing:0.04em;">Universo: ${summary.reviewed.toLocaleString('es-CL')}</p>
+        </div>
       `).join('');
     }
 
@@ -1510,23 +1553,27 @@
           </tr>
         `;
       } else {
-        refs.resultsBody.innerHTML = findings.map((item) => `
-          <tr class="${rowClasses(item.severity)} text-sm text-slate-800">
-            <td class="px-4 py-4">
-              <span class="inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${severityClasses(item.severity)}">
-                ${severityLabel(item.severity)}
-              </span>
+        refs.resultsBody.innerHTML = findings.map((item, idx) => {
+          const prevRule = idx > 0 ? findings[idx-1].ruleTitle : null;
+          const showRule = item.ruleTitle !== prevRule;
+          const borderTop = showRule && idx > 0 ? 'border-top:2px solid #30363D;' : 'border-top:1px solid #21262D;';
+          const sevClass = item.severity === 'alta' ? 'badge-alta' : item.severity === 'media' ? 'badge-media' : 'badge-baja';
+          const rowBg = item.severity === 'alta' ? 'rgba(248,81,73,0.04)' : item.severity === 'media' ? 'rgba(210,153,34,0.04)' : 'transparent';
+          return `
+          <tr style="background:${rowBg};${borderTop}">
+            <td style="padding:8px 12px;white-space:nowrap;">
+              <span class="pill ${sevClass}">${severityLabel(item.severity)}</span>
             </td>
-            <td class="px-4 py-4 font-semibold">${item.ruleTitle}</td>
-            <td class="px-4 py-4 font-medium">${item.rut}</td>
-            <td class="px-4 py-4">${item.name}</td>
-            <td class="px-4 py-4">${item.company}</td>
-            <td class="min-w-[320px] px-4 py-4 leading-6 text-slate-700">${item.detail}</td>
-            <td class="px-4 py-4 font-medium">${item.bookValue || '—'}</td>
-            <td class="px-4 py-4 font-medium">${item.externalValue || '—'}</td>
-            <td class="min-w-[280px] px-4 py-4 text-slate-600">${item.reference || '—'}</td>
-          </tr>
-        `).join('');
+            <td style="padding:8px 12px;font-size:11px;font-weight:600;color:#8B949E;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${item.ruleTitle}">${showRule ? item.ruleTitle : ''}</td>
+            <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#C9D1D9;white-space:nowrap;">${item.rut}</td>
+            <td style="padding:8px 12px;font-size:12px;font-weight:500;color:#F0F6FC;white-space:nowrap;">${item.name}</td>
+            <td style="padding:8px 12px;font-size:11px;color:#8B949E;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.company}">${item.company}</td>
+            <td style="padding:8px 12px;font-size:11px;color:#C9D1D9;line-height:1.4;min-width:220px;">${item.detail}</td>
+            <td style="padding:8px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#C9D1D9;text-align:right;white-space:nowrap;">${item.bookValue || '—'}</td>
+            <td style="padding:8px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#C9D1D9;text-align:right;white-space:nowrap;">${item.externalValue || '—'}</td>
+            <td style="padding:8px 12px;font-size:11px;color:#8B949E;min-width:160px;">${item.reference || '—'}</td>
+          </tr>`;
+        }).join('');
       }
 
       refs.resultsCount.textContent = `Mostrando ${findings.length.toLocaleString('es-CL')} de ${state.findings.length.toLocaleString('es-CL')} hallazgos.`;
@@ -1535,7 +1582,7 @@
     function renderResults() {
       renderSummaries();
       renderTable();
-      refs.resultsSection.classList.remove('hidden');
+      refs.resultsSection.style.display = 'flex'; refs.resultsSection.classList.remove('hidden');
     }
 
     function exportResults() {
@@ -1742,4 +1789,5 @@
     updateRunState();
   </script>
 </body>
+</html>
 </html>
