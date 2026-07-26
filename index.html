@@ -1917,7 +1917,7 @@
         ruleResults.push(runRuleRenovaciones(maestroMap, detalleParsed.auditMonth, contextForRut));
 
         setProcessingLabel('Conciliando Fonasa con OCR local');
-        const fonasaParsed = await parseFonasaDocuments(state.files.fonasa, detailRecords);
+        const fonasaParsed = await parseFonasaDocuments(state.files.fonasa, detalleParsed.records);
         ruleResults.push(runRuleFonasa(detalleParsed.records, contextForRut, fonasaParsed));
 
         state.findings = ruleResults.flatMap((result) => result.findings);
