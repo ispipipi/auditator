@@ -1309,35 +1309,38 @@
         const nominaSindicatos = Array.from(nominaMap.get(rut) || []);
         const nominaNorm = new Set(nominaSindicatos.map(normalizeText));
 
-        // Solo evaluar sindicatos del libro que SÍ están cubiertos en la nómina
+        // Sindicatos del libro cubiertos en nómina pero el RUT no aparece en ella
         libroSindicatos.forEach((sindicato) => {
           const norm = normalizeText(sindicato);
-          if (sindicatosNoEnNomina.has(norm)) return; // excluir — no está en nómina
+          if (sindicatosNoEnNomina.has(norm)) return; // excluir — sin nómina recibida
           if (!nominaNorm.has(norm)) {
             findings.push(createFinding(
               'sindicatos',
               'media',
               context,
-              'Sindicato cubierto en nomina pero RUT no aparece en ella.',
+              `"${sindicato}" registrado en libro pero persona ausente en la nómina sindical.`,
               sindicato,
-              nominaSindicatos.join(' | ') || 'Sin registro en nomina',
-              'Sindicato si existe en nomina para otros RUT'
+              nominaSindicatos.join(' / ') || 'Ausente en nómina',
+              'Libro de remuneraciones'
             ));
           }
         });
 
-        // RUT en nómina que no tiene ese sindicato en el libro
+        // RUT en nómina que no tiene sindicato registrado en el libro
         nominaSindicatos.forEach((sindicato) => {
           const libroNorm = new Set(libroSindicatos.map(normalizeText));
           if (!libroNorm.has(normalizeText(sindicato))) {
+            const sinEnLibro = libroSindicatos.length > 0;
             findings.push(createFinding(
               'sindicatos',
               'media',
               context,
-              'Sindicato en nomina pero RUT no figura con ese sindicato en el libro.',
-              libroSindicatos.join(' | ') || 'Sin sindicato en libro',
+              sinEnLibro
+                ? `Nómina informa "${sindicato}" pero el libro registra un sindicato distinto.`
+                : `Nómina informa "${sindicato}" — sin sindicato registrado en el libro.`,
+              sinEnLibro ? libroSindicatos.join(' / ') : 'Sin sindicato en libro',
               sindicato,
-              'Validacion por RUT + sindicato'
+              'Nómina sindical'
             ));
           }
         });
@@ -2196,15 +2199,25 @@
           const rowCls = item.severity === 'alta' ? 'tr-alta' : item.severity === 'media' ? 'tr-media' : 'tr-baja';
           const breakCls = showRule && idx > 0 ? 'tr-rule-break' : '';
           const pillCls = item.severity === 'alta' ? 'pill-alta' : item.severity === 'media' ? 'pill-media' : 'pill-baja';
+          const isSindRule = item.ruleTitle && item.ruleTitle.toLowerCase().includes('sindicat');
+          const bookVal = item.bookValue || '—';
+          const extVal  = item.externalValue || '—';
+          const bookStyle = isSindRule && bookVal !== '—'
+            ? 'font-size:11px;font-weight:600;color:#DC2626;white-space:nowrap;'
+            : 'font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#374151;text-align:right;white-space:nowrap;';
+          const extStyle  = isSindRule && extVal !== '—'
+            ? 'font-size:11px;font-weight:600;color:#16A34A;white-space:nowrap;'
+            : 'font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#374151;text-align:right;white-space:nowrap;';
+
           return `<tr class="${rowCls} ${breakCls}">
             <td><span class="pill ${pillCls}">${severityLabel(item.severity)}</span></td>
             <td style="font-size:11px;font-weight:600;color:#94A3B8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.ruleTitle}">${showRule ? item.ruleTitle : ''}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;white-space:nowrap;">${item.rut}</td>
             <td style="font-size:12px;font-weight:500;color:#0F172A;white-space:nowrap;">${item.name}</td>
-            <td style="font-size:11px;color:#64748B;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.company}">${item.company}</td>
-            <td style="font-size:11px;color:#374151;line-height:1.4;">${item.detail}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;text-align:right;white-space:nowrap;">${item.bookValue || '—'}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#374151;text-align:right;white-space:nowrap;">${item.externalValue || '—'}</td>
+            <td style="font-size:11px;color:#64748B;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.company}">${item.company}</td>
+            <td style="font-size:11px;color:#374151;line-height:1.4;min-width:200px;">${item.detail}</td>
+            <td style="${bookStyle}">${isSindRule && bookVal !== '—' ? '📕 ' + bookVal : bookVal}</td>
+            <td style="${extStyle}">${isSindRule && extVal !== '—' ? '📋 ' + extVal : extVal}</td>
             <td style="font-size:11px;color:#64748B;">${item.reference || '—'}</td>
           </tr>`;
         }).join('');
