@@ -1270,92 +1270,96 @@
     function runRuleSindicatos(detailRecords, maestroMap, nominaMap, contextForRut) {
       const findings = [];
 
-      // 1. Detectar todos los sindicatos únicos en la nómina (los que SÍ están cubiertos)
-      const sindicatosEnNomina = new Set();
-      nominaMap.forEach((sindicatosSet) => {
-        sindicatosSet.forEach((s) => sindicatosEnNomina.add(normalizeText(s)));
-      });
+      // El cruce es por RUT, no por nombre de sindicato
+      // (los nombres en nómina son abreviaturas: "SITAL", en libro son nombres completos)
+      // nominaMap: { rut → Set<nombreSindicato> } — quién está en la nómina recibida
+      // detailRecords: registros del libro con sindicato1/sindicato2
 
-      // 2. Detectar todos los sindicatos únicos en el libro
-      const sindicatosEnLibro = new Set();
+      // 1. RUTs que están en la nómina (cubiertos)
+      const rutsEnNomina = new Set(nominaMap.keys());
+
+      // 2. RUTs del libro que tienen algún sindicato
+      const rutsSindicalizadosLibro = new Map(); // rut → [sindicatos]
       detailRecords.forEach((record) => {
-        collectLibroSindicatos(record).forEach((s) => sindicatosEnLibro.add(normalizeText(s)));
+        const sins = collectLibroSindicatos(record);
+        if (sins.length > 0) rutsSindicalizadosLibro.set(record.rut, sins);
       });
 
-      // 3. Sindicatos del libro que NO están cubiertos en la nómina → excluir de auditoría
-      const sindicatosNoEnNomina = new Set();
-      sindicatosEnLibro.forEach((s) => {
-        if (!sindicatosEnNomina.has(s)) sindicatosNoEnNomina.add(s);
+      // 3. Construir lista de sindicatos del libro sin nómina recibida
+      // Un sindicato "sin nómina" es aquel donde NINGÚN RUT de ese sindicato está en nominaMap
+      const sindicatoRuts = new Map(); // sindicatoNorm → Set<rut>
+      rutsSindicalizadosLibro.forEach((sins, rut) => {
+        sins.forEach(s => {
+          const norm = normalizeText(s);
+          if (!sindicatoRuts.has(norm)) sindicatoRuts.set(norm, new Set());
+          sindicatoRuts.get(norm).add(rut);
+        });
       });
 
-      // 4. Universo ACOTADO: 
-      // - RUTs en la nómina (verificar que el libro los tenga con ese sindicato)
-      // - RUTs en libro con sindicato cubierto pero que no están en nómina
-      const selectedRuts = new Set();
+      // Sindicato "cubierto" = al menos 1 RUT de ese sindicato aparece en nominaMap
+      const sindicatosCubiertos = new Set();
+      const sindicatosNoCubiertos = new Set();
+      const sindicatoNombreOriginal = new Map(); // norm → nombre original
 
-      // Primero: todos los de la nómina
-      nominaMap.forEach((_, rut) => selectedRuts.add(rut));
-
-      // Segundo: del libro, solo los que tienen sindicato CUBIERTO y deberían estar en nómina
-      detailRecords.forEach((record) => {
-        const libroSins = collectLibroSindicatos(record);
-        const tieneCubierto = libroSins.some(s => !sindicatosNoEnNomina.has(normalizeText(s)));
-        if (tieneCubierto) selectedRuts.add(record.rut);
+      sindicatoRuts.forEach((ruts, normSind) => {
+        const tieneCubierto = [...ruts].some(r => rutsEnNomina.has(r));
+        if (tieneCubierto) sindicatosCubiertos.add(normSind);
+        else sindicatosNoCubiertos.add(normSind);
       });
 
+      // Guardar nombres originales
+      rutsSindicalizadosLibro.forEach((sins) => {
+        sins.forEach(s => sindicatoNombreOriginal.set(normalizeText(s), s));
+      });
+
+      // 4. Universo: RUTs sindicalizados en libro con sindicato cubierto + todos en nómina
+      const selectedRuts = new Set([...rutsEnNomina]);
+      rutsSindicalizadosLibro.forEach((sins, rut) => {
+        if (sins.some(s => sindicatosCubiertos.has(normalizeText(s)))) {
+          selectedRuts.add(rut);
+        }
+      });
+
+      // 5. Evaluar cada RUT del universo
       selectedRuts.forEach((rut) => {
         const context = contextForRut(rut);
-        const libroSindicatos = collectLibroSindicatos(context.detail);
-        const nominaSindicatos = Array.from(nominaMap.get(rut) || []);
-        const nominaNorm = new Set(nominaSindicatos.map(normalizeText));
+        const libroSins = rutsSindicalizadosLibro.get(rut) || [];
+        const libroSinsCubiertos = libroSins.filter(s => sindicatosCubiertos.has(normalizeText(s)));
+        const enNomina = rutsEnNomina.has(rut);
 
-        // Sindicatos del libro cubiertos en nómina pero el RUT no aparece en ella
-        libroSindicatos.forEach((sindicato) => {
-          const norm = normalizeText(sindicato);
-          if (sindicatosNoEnNomina.has(norm)) return; // excluir — sin nómina recibida
-          if (!nominaNorm.has(norm)) {
+        // Caso A: tiene sindicato cubierto en libro pero NO está en nómina
+        if (libroSinsCubiertos.length > 0 && !enNomina) {
+          libroSinsCubiertos.forEach(sindicato => {
             findings.push(createFinding(
-              'sindicatos',
-              'media',
-              context,
-              `"${sindicato}" registrado en libro pero persona ausente en la nómina sindical.`,
-              sindicato,
-              nominaSindicatos.join(' / ') || 'Ausente en nómina',
-              'Libro de remuneraciones'
+              'sindicatos', 'media', context,
+              `"${sindicato}" registrado en libro pero persona no aparece en la nómina recibida.`,
+              sindicato, 'Ausente en nómina', 'Libro de remuneraciones'
             ));
-          }
-        });
+          });
+        }
 
-        // RUT en nómina que no tiene sindicato registrado en el libro
-        nominaSindicatos.forEach((sindicato) => {
-          const libroNorm = new Set(libroSindicatos.map(normalizeText));
-          if (!libroNorm.has(normalizeText(sindicato))) {
-            const sinEnLibro = libroSindicatos.length > 0;
-            findings.push(createFinding(
-              'sindicatos',
-              'media',
-              context,
-              sinEnLibro
-                ? `Nómina informa "${sindicato}" pero el libro registra un sindicato distinto.`
-                : `Nómina informa "${sindicato}" — sin sindicato registrado en el libro.`,
-              sinEnLibro ? libroSindicatos.join(' / ') : 'Sin sindicato en libro',
-              sindicato,
-              'Nómina sindical'
-            ));
-          }
-        });
+        // Caso B: está en nómina pero sin sindicato en libro
+        if (enNomina && libroSins.length === 0) {
+          const nominaSinds = Array.from(nominaMap.get(rut) || []);
+          findings.push(createFinding(
+            'sindicatos', 'media', context,
+            `Nómina informa "${nominaSinds.join(' / ')}" — sin sindicato registrado en el libro.`,
+            'Sin sindicato en libro', nominaSinds.join(' / '), 'Nómina sindical'
+          ));
+        }
+
+        // Caso C: está en nómina con sindicato cubierto en libro → OK (no es hallazgo)
+        // (el cruce por RUT es suficiente — no comparamos nombres)
       });
 
-      // 5. Construir nota con sindicatos excluidos
-      const excluidos = Array.from(sindicatosNoEnNomina);
-      let note = '';
-      if (findings.length) {
-        note = `${findings.length} diferencias en sindicatos cubiertos por la nomina.`;
-      } else {
-        note = 'Sin diferencias en sindicatos cubiertos.';
-      }
+      // 6. Nota con sindicatos sin nómina
+      const excluidos = Array.from(sindicatosNoCubiertos)
+        .map(n => sindicatoNombreOriginal.get(n) || n);
+      let note = findings.length
+        ? `${findings.length} diferencias en sindicatos cubiertos.`
+        : 'Sin diferencias en sindicatos cubiertos.';
       if (excluidos.length) {
-        note += ` | ${excluidos.length} sindicato(s) del libro sin nomina recibida: ${excluidos.slice(0, 3).join(', ')}${excluidos.length > 3 ? ` y ${excluidos.length - 3} más` : ''}.`;
+        note += ` | ${excluidos.length} sindicato(s) sin nómina recibida: ${excluidos.slice(0,3).join(', ')}${excluidos.length > 3 ? ` y ${excluidos.length - 3} más` : ''}.`;
       }
 
       return {
@@ -1363,7 +1367,7 @@
         reviewed: selectedRuts.size,
         findings,
         note,
-        sindicatosExcluidos: excluidos  // disponible para mostrar en detalle
+        sindicatosExcluidos: excluidos
       };
     }
 
