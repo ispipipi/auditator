@@ -1288,11 +1288,17 @@
         if (!sindicatosEnNomina.has(s)) sindicatosNoEnNomina.add(s);
       });
 
-      // 4. Solo auditar RUTs cuyo sindicato SÍ existe en la nómina
-      const selectedRuts = new Set([
-        ...detailRecords.map((record) => record.rut),
-        ...nominaMap.keys()
-      ]);
+      // 4. Universo: solo RUTs que tienen sindicato cubierto en nómina en alguna fuente
+      // - RUTs del libro con sindicato cubierto
+      // - RUTs de la nómina
+      const selectedRuts = new Set();
+
+      detailRecords.forEach((record) => {
+        const libroSins = collectLibroSindicatos(record);
+        const tieneCubierto = libroSins.some(s => !sindicatosNoEnNomina.has(normalizeText(s)));
+        if (tieneCubierto || nominaMap.has(record.rut)) selectedRuts.add(record.rut);
+      });
+      nominaMap.forEach((_, rut) => selectedRuts.add(rut));
 
       selectedRuts.forEach((rut) => {
         const context = contextForRut(rut);
