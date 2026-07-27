@@ -953,6 +953,9 @@
         tipoContrato: columns.get('tipoContrato', 'Tipo Contrato'),
         fechaTerm: columns.get('fechaTerm', 'Fecha Término'),
         fonasa: columns.get('prestmedicofonasa', 'Prestamo Medico Fonasa', 'Préstamo Medico Fonasa'),
+        afectoImpuesto: columns.get('afeImpue', 'Afecto Impuesto'),
+        cargo: columns.get('cargo', 'Cargo'),
+        sede: columns.get('sede', 'Sede'),
         cuotaSindical: columns.get('cuotasindical', 'Cuota Sindical'),
         cuotaConfederacion: columns.get('sindsimpaecuotaconfp', 'Cuota Confederacion', 'Cuota Confederación')
       };
@@ -990,6 +993,9 @@
           cajaComp: parseAmount(getCell(row, indexes.cajaComp)),
           imponible: parseAmount(getCell(row, indexes.imponible)),
           diasTrabajados: parseInt(String(getCell(row, indexes.diasTrabajados) || '0').replace(/[^0-9]/g,''), 10) || 0,
+          afectoImpuesto: parseAmount(getCell(row, indexes.afectoImpuesto)),
+          cargo: String(getCell(row, indexes.cargo) || '').trim(),
+          sede: String(getCell(row, indexes.sede) || '').trim(),
           sindicato1: String(getCell(row, indexes.sindicato1) || '').trim(),
           sindicato2: String(getCell(row, indexes.sindicato2) || '').trim(),
           tipoContrato: String(getCell(row, indexes.tipoContrato) || '').trim(),
@@ -1215,57 +1221,54 @@
       };
     }
 
-    function runRuleCaja25(detailRecords, contextForRut) {
+        function runRuleCaja25(detailRecords, contextForRut) {
       const findings = [];
 
       detailRecords.forEach((record) => {
-        const totalCaja = record.cajaCred + record.cajaVida + record.cajaAhorro + record.cajaComp;
-        if (totalCaja <= 0) return;
+        const cajaCred = record.cajaCredito || 0;
+        const afecto   = record.afectoImpuesto || 0;
 
-        if (record.imponible <= 0) {
-          findings.push(createFinding(
-            'caja-25',
-            'alta',
-            contextForRut(record.rut),
-            'Tiene descuentos de caja con imponible cero o no informado.',
-            formatAmount(totalCaja),
-            formatAmount(record.imponible),
-            'No es posible validar el 25%'
-          ));
-          return;
-        }
+        // Solo evaluar si hay crédito CCAF y base de cálculo válida
+        if (cajaCred <= 0 || afecto <= 0) return;
 
-        const ratio = totalCaja / record.imponible;
-        if (ratio > 0.25) {
-          findings.push(createFinding(
-            'caja-25',
+        const porcentaje = cajaCred / afecto;
+
+        if (porcentaje <= 0.25) return; // dentro del límite legal
+
+        const context   = contextForRut(record.rut);
+        const montoCorregido = Math.round(afecto * 0.25);
+        const pctDisplay = (porcentaje * 100).toFixed(1) + '%';
+
+        findings.push({
+          ...createFinding(
+            'caja25',
             'alta',
-            contextForRut(record.rut),
-            'Los descuentos de caja superan el 25% del imponible.',
-            `${formatAmount(totalCaja)} (${(ratio * 100).toFixed(1)}%)`,
-            formatAmount(record.imponible),
-            `Credito ${formatAmount(record.cajaCred)} | Vida ${formatAmount(record.cajaVida)} | Ahorro ${formatAmount(record.cajaAhorro)} | Aporte ${formatAmount(record.cajaComp)}`
-          ));
-        }
+            context,
+            `Crédito CCAF representa el ${pctDisplay} del afecto a impuesto (límite legal: 25%).`,
+            formatAmount(afecto),
+            formatAmount(cajaCred),
+            `Monto corregido: ${formatAmount(montoCorregido)}`
+          ),
+          // Campos extra para la tabla
+          cargo:         record.cargo || '—',
+          sede:          record.sede  || '—',
+          afectoImpuesto: afecto,
+          cajaCred,
+          porcentaje:    pctDisplay,
+          montoCorregido
+        });
       });
 
       return {
-        id: 'caja-25',
+        id: 'caja25',
         reviewed: detailRecords.length,
         findings,
         note: findings.length
-          ? `${findings.length} personas exceden el umbral del 25%.`
-          : 'Los descuentos de caja quedan bajo el 25% del imponible en los registros revisados.'
+          ? `${findings.length} personas exceden el 25% del afecto a impuesto.`
+          : 'Ningún crédito CCAF excede el 25% del afecto a impuesto.'
       };
     }
 
-    function collectLibroSindicatos(record) {
-      const set = new Set();
-      [record?.sindicato1, record?.sindicato2].forEach((value) => {
-        if (isMeaningfulSyndicate(value)) set.add(String(value).trim());
-      });
-      return Array.from(set);
-    }
 
     function runRuleSindicatos(detailRecords, maestroMap, nominaMap, contextForRut) {
       const findings = [];
@@ -2203,7 +2206,8 @@
           const rowCls = item.severity === 'alta' ? 'tr-alta' : item.severity === 'media' ? 'tr-media' : 'tr-baja';
           const breakCls = showRule && idx > 0 ? 'tr-rule-break' : '';
           const pillCls = item.severity === 'alta' ? 'pill-alta' : item.severity === 'media' ? 'pill-media' : 'pill-baja';
-          const isSindRule = item.ruleTitle && item.ruleTitle.toLowerCase().includes('sindicat');
+          const isSindRule  = item.ruleTitle && item.ruleTitle.toLowerCase().includes('sindicat');
+          const isCaja25   = item.ruleId === 'caja25';
           const bookVal = item.bookValue || '—';
           const extVal  = item.externalValue || '—';
           const bookStyle = isSindRule && bookVal !== '—'
@@ -2222,7 +2226,7 @@
             <td style="font-size:11px;color:#374151;line-height:1.4;min-width:200px;">${item.detail}</td>
             <td style="${bookStyle}">${isSindRule && bookVal !== '—' ? '📕 ' + bookVal : bookVal}</td>
             <td style="${extStyle}">${isSindRule && extVal !== '—' ? '📋 ' + extVal : extVal}</td>
-            <td style="font-size:11px;color:#64748B;">${item.reference || '—'}</td>
+            <td style="font-size:11px;color:${isCaja25 && item.reference && item.reference.includes('Monto') ? '#16A34A' : '#64748B'};font-weight:${isCaja25 ? '600' : '400'};">${item.reference || '—'}</td>
           </tr>`;
         }).join('');
       }
